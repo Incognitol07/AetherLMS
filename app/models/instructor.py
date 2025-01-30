@@ -1,0 +1,26 @@
+# app/models/instructor.py
+
+from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from .course import course_instructors, Course
+from app.database import Base
+
+
+class Instructor(Base):
+    __tablename__ = 'instructors'
+    id = Column(UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True)
+    specialization = Column(String)
+    user = relationship("User", back_populates="instructors")
+    courses = relationship("Course", back_populates="instructor")
+
+    # Many-to-Many Relationship with Courses
+    courses = relationship("Course", secondary=course_instructors, back_populates="instructors")
+
+    def add_course(self, course: Course):
+        """Assign a course to the instructor."""
+        self.courses.append(course)
+
+    def remove_course(self, course: Course):
+        """Remove a course from the instructor."""
+        self.courses.remove(course)
