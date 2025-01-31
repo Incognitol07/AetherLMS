@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from app.database import engine, Base
 from app.config import settings
 from app.utils import logger
+from app.utils.seed import initialize_roles
+from app.models import *
 
 # Create the FastAPI application
 @asynccontextmanager
@@ -19,6 +21,8 @@ async def lifespan(app: FastAPI):
     # Create tables asynchronously
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    await initialize_roles()
 
     try:
         yield

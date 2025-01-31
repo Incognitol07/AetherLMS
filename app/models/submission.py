@@ -3,7 +3,7 @@
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float, Boolean, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.sql import func
 import uuid
 from app.database import Base
 
@@ -14,7 +14,7 @@ class Submission(Base):
     assignment_id = Column(UUID(as_uuid=True), ForeignKey('assignments.id'))
     student_id = Column(UUID(as_uuid=True), ForeignKey('students.id'))
     submission_url = Column(String)
-    submitted_at = Column(DateTime, default=datetime.now())
+    submitted_at = Column(DateTime, default=func.now())
     grade = Column(Float, nullable=True)
     
     assignment = relationship("Assignment", back_populates="submissions")

@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -14,7 +15,7 @@ class Analytics(Base):
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     student_id = Column(UUID(as_uuid=True), ForeignKey('students.id'))
     completion_rate = Column(Float)
-    last_active = Column(DateTime, default=datetime.now)
+    last_active = Column(DateTime, default=func.now())
     
     course = relationship("Course")
     student = relationship("Student", back_populates="analytics")

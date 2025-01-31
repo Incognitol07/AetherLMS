@@ -1,20 +1,12 @@
 # app/models/course.py
 
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Table
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .instructor import Instructor
+from .association_tables import course_instructors  # Import from the new file
 from .module import Module
-
-# Association Table for Many-to-Many Relationship
-course_instructors = Table(
-    "course_instructors",
-    Base.metadata,
-    Column("course_id", UUID(as_uuid=True), ForeignKey("courses.id"), primary_key=True),
-    Column("instructor_id", UUID(as_uuid=True), ForeignKey("instructors.id"), primary_key=True)
-)
 
 class Course(Base):
     __tablename__ = "courses"
@@ -26,7 +18,7 @@ class Course(Base):
     end_date = Column(DateTime)
     status = Column(Enum("active", "completed", "archived", name="course_status"), default="active")
 
-    # Many-to-Many Relationship with Instructors
+    # Many-to-Many Relationship with Instructors (using string-based reference)
     instructors = relationship("Instructor", secondary=course_instructors, back_populates="courses")
     
     # Other relationships
@@ -35,11 +27,11 @@ class Course(Base):
     discussions = relationship("Discussion", back_populates="course")
     payments = relationship("Payment", back_populates="course")
 
-    def add_instructor(self, instructor: Instructor):
+    def add_instructor(self, instructor: "Instructor"): # type: ignore
         """Add an instructor to the course."""
         self.instructors.append(instructor)
 
-    def remove_instructor(self, instructor: Instructor):
+    def remove_instructor(self, instructor: "Instructor"): # type: ignore
         """Remove an instructor from the course."""
         self.instructors.remove(instructor)
 

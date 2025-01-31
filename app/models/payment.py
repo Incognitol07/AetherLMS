@@ -3,7 +3,7 @@
 from sqlalchemy import Column, ForeignKey, DateTime, Float, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.sql import func
 import uuid
 from app.database import Base
 
@@ -15,7 +15,7 @@ class Payment(Base):
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     amount = Column(Float)
     payment_status = Column(Enum('pending', 'completed', 'failed', name='payment_status'))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=func.now())
     
     user = relationship("User", back_populates="payments")
     course = relationship("Course", back_populates="payments")

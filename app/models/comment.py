@@ -1,9 +1,9 @@
 # app/models/comment.py
 
 import uuid
-from datetime import datetime
 from sqlalchemy import Column, Text, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -13,7 +13,7 @@ class Comment(Base):
     discussion_id = Column(UUID(as_uuid=True), ForeignKey('discussions.id'))
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
     content = Column(Text)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=func.now())
     
     discussion = relationship("Discussion", back_populates="comments")
     user = relationship("User", back_populates="comments")

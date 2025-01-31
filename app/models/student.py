@@ -4,7 +4,6 @@ from sqlalchemy import Column, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .submission import Submission
 
 class Student(Base):
     __tablename__ = 'students'
@@ -14,7 +13,7 @@ class Student(Base):
     submissions = relationship("Submission", back_populates="student")
     analytics = relationship("Analytics", back_populates="student")
 
-    def add_submission(self, submission: Submission):
+    def add_submission(self, submission: "Submission"): # type: ignore
         """Add a submission for the student."""
         self.submissions.append(submission)
 

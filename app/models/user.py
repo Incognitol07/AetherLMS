@@ -1,23 +1,31 @@
 # app/models/user.py
 
 import uuid
-from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Enum
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .notification import Notification
-from .payment import Payment
+from enum import Enum as PyEnum
+
+# Define the roles as an Enum
+class UserRole(str, PyEnum):
+    STUDENT = "student"
+    INSTRUCTOR = "instructor"
+    ADMIN = "admin"
+    MODERATOR = "moderator"
+    SUPERADMIN = "superadmin"
 
 class User(Base):
     __tablename__ = 'users'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)
-    role = Column(Enum('student', 'instructor', 'admin', name='user_roles'),default='student', nullable=False)
-    date_joined = Column(DateTime, default=datetime.now())
+    hashed_password = Column(String, nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.STUDENT, nullable=False)
+    date_joined = Column(DateTime, default=func.now())
     
+    admin_info = relationship("Admin", back_populates="user")
     students = relationship("Student", back_populates="user", uselist=False)
     instructors = relationship("Instructor", back_populates="user", uselist=False)
     notifications = relationship("Notification", back_populates="user")
@@ -25,11 +33,11 @@ class User(Base):
     comments = relationship("Comment", back_populates="user")
     payments = relationship("Payment", back_populates="user")
 
-    def add_notification(self, notification: Notification):
+    def add_notification(self, notification: "Notification"): # type: ignore
         """Add a notification for the user."""
         self.notifications.append(notification)
 
-    def add_payment(self, payment: Payment):
+    def add_payment(self, payment: "Payment"): # type: ignore
         """Add a payment made by the user."""
         self.payments.append(payment)
 

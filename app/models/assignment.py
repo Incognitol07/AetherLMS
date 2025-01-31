@@ -6,7 +6,6 @@ from sqlalchemy import Column, String, Text, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .submission import Submission
 
 
 class Assignment(Base):
@@ -21,7 +20,7 @@ class Assignment(Base):
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
 
-    def add_submission(self, submission: Submission):
+    def add_submission(self, submission: "Submission"): # type: ignore
         """Add a submission to the assignment."""
         self.submissions.append(submission)
 

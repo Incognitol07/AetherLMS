@@ -1,12 +1,10 @@
 # app/models/user.py
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float, Boolean, Enum, JSON
+from sqlalchemy import Column, String, Text, ForeignKey, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
 from app.database import Base
-from .lesson import Lesson
 
 
 class Module(Base):
@@ -20,7 +18,7 @@ class Module(Base):
     course = relationship("Course", back_populates="modules")
     lessons = relationship("Lesson", back_populates="module")
 
-    def add_lesson(self, lesson: Lesson):
+    def add_lesson(self, lesson: "Lesson"): # type: ignore
         """Add a lesson to the module."""
         self.lessons.append(lesson)
 
