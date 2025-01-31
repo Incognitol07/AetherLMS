@@ -11,3 +11,4 @@ requests
 alembic
 asyncpg 
 aiosqlite
+celery
