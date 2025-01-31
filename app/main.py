@@ -11,6 +11,7 @@ from app.config import settings
 from app.utils import logger
 from app.utils.seed import initialize_roles
 from app.models import *
+from app.routers import *
 
 # Create the FastAPI application
 @asynccontextmanager
@@ -49,7 +50,15 @@ app.add_middleware(
 
 
 # Include routers
-
+app.include_router(admin_router)
+app.include_router(user_router)
+app.include_router(course_router)
+app.include_router(assignment_router)
+app.include_router(discussion_router)
+app.include_router(payment_router)
+app.include_router(analytics_router)
+app.include_router(notification_router)
+app.include_router(background_task_router)
 
 
 # Middleware to log route endpoints
