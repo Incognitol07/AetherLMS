@@ -15,16 +15,20 @@ from app.utils import logger
 async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     print("Starting up the application...")
-    # Initialize database (create tables if they don't exist)
-    Base.metadata.create_all(bind=engine)
+    
+    # Create tables asynchronously
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     try:
         yield
     finally:
         print("Shutting down the application...")
 
+
 app = FastAPI(
     title=settings.APP_NAME,
-    description="An API",
+    description=settings.APP_DESCRIPTION,
     version="1.0.0",
     debug=settings.DEBUG,  # Enable debug mode if in development
     lifespan=lifespan,

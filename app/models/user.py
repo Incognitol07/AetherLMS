@@ -15,7 +15,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
-    role = Column(Enum('student', 'instructor', 'admin', name='user_roles'), nullable=False)
+    role = Column(Enum('student', 'instructor', 'admin', name='user_roles'),default='student', nullable=False)
     date_joined = Column(DateTime, default=datetime.now())
     
     students = relationship("Student", back_populates="user", uselist=False)
