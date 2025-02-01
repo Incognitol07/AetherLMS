@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Assignment, Instructor, Student, Submission
-from app.utils.dependencies import get_current_instructor, get_current_student
-from app.utils.logging_config import logger
+from app.utils import (
+    get_current_instructor, 
+    get_current_student, 
+    logger
+    )
 
 router = APIRouter(prefix="/assignments", tags=["assignments"])
 

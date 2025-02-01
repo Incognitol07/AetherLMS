@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models import Role, Admin
-from app.utils.dependencies import get_current_admin
-from app.utils.logging_config import logger
+from app.utils import (
+    get_current_admin, 
+    logger
+    )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

@@ -1,3 +1,5 @@
+# app/utils/__init__.py
+
 from .security import (
     create_access_token, 
     verify_password, 

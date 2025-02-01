@@ -81,5 +81,4 @@ async def log_requests(request: Request, call_next):
 # Root endpoint for health check
 @app.get("/")
 def read_root():
-    send_assignment_reminders.delay()
     return {"message": f"{settings.APP_NAME} is running"}

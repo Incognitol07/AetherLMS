@@ -1,6 +1,6 @@
 # app/models/__init__.py
 
-from .user import User
+from .user import User, UserRole
 from .admin import Admin, Role
 from .course import Course
 from .module import Module

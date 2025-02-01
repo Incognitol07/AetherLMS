@@ -5,8 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models import Course, Instructor
-from app.utils.dependencies import get_current_instructor, get_current_user
-from app.utils.logging_config import logger
+from app.utils import (
+    get_current_instructor, 
+    get_current_user, 
+    logger
+    )
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 

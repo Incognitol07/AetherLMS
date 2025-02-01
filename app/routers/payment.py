@@ -5,8 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models import Payment, User
-from app.utils.dependencies import get_current_user, get_current_admin
-from app.utils.logging_config import logger
+from app.utils import (
+    get_current_user, 
+    get_current_admin, 
+    logger
+    )
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 

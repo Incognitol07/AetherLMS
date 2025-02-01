@@ -5,8 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models import Analytics, User
-from app.utils.dependencies import get_current_student, get_current_instructor
-from app.utils.logging_config import logger
+from app.utils import (
+    get_current_student, 
+    get_current_instructor, 
+    logger
+    )
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
