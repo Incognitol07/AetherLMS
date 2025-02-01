@@ -17,7 +17,9 @@ from .dependencies import (
     get_current_user,
     get_admin_with_permission,
     get_moderator,
-    get_superadmin
+    get_superadmin,
+    get_support_admin,
+    get_content_manager
 )
 from .seed import (
     initialize_roles_and_permissions,

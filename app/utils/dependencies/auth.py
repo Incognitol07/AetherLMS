@@ -1,3 +1,5 @@
+# app/utils/dependencies/auth.py
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.future import select
@@ -215,3 +217,63 @@ async def get_moderator(db: AsyncSession = Depends(get_db), current_user: User =
             detail="You do not have permission to access this resource",
         )
     return admin
+
+async def get_content_manager(
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)
+) -> Admin:
+    """
+    Ensures the current admin is a content manager.
+
+    Args:
+        db (AsyncSession): The database session.
+        current_user (User): The authenticated admin user object.
+
+    Raises:
+        HTTPException: If the admin is not a content manager.
+
+    Returns:
+        Admin: The authenticated content manager user object.
+    """
+    admin = await db.execute(
+        select(Admin).filter(Admin.user_id == current_user.id)
+    )
+    admin = admin.scalars().first()
+
+    if not admin or not admin.role or admin.role.name != "content_manager":
+        logger.warning(f"Unauthorized content manager access attempt by admin '{current_user.email}'.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this resource",
+        )
+    return admin
+
+
+async def get_support_admin(
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)
+) -> Admin:
+    """
+    Ensures the current admin is a support admin.
+
+    Args:
+        db (AsyncSession): The database session.
+        current_user (User): The authenticated admin user object.
+
+    Raises:
+        HTTPException: If the admin is not a support admin.
+
+    Returns:
+        Admin: The authenticated support admin user object.
+    """
+    admin = await db.execute(
+        select(Admin).filter(Admin.user_id == current_user.id)
+    )
+    admin = admin.scalars().first()
+
+    if not admin or not admin.role or admin.role.name != "support":
+        logger.warning(f"Unauthorized support admin access attempt by admin '{current_user.email}'.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this resource",
+        )
+    return admin
+
