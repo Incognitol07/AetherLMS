@@ -1,6 +1,6 @@
 # app/models/submission.py
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float, Boolean, Enum, JSON
+from sqlalchemy import Column, String,ForeignKey, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

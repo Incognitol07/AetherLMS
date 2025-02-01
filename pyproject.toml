@@ -1,7 +1,7 @@
 [project]
 name = "aetherlms"
 version = "0.1.0"
-description = "Add your description here"
+description = "An Online Learning Management System to manage courses, students, and learning content."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

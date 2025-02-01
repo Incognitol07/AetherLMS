@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .association_tables import course_instructors  # Import from the new file
+from .association_tables import course_instructors
 
 class Instructor(Base):
     __tablename__ = 'instructors'

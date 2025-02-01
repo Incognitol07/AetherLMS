@@ -1,9 +1,8 @@
 # app/models/lesson.py
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float, Boolean, Enum, JSON
+from sqlalchemy import Column, String, Text, ForeignKey, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
 from app.database import Base
 
