@@ -1,50 +1,48 @@
 # app/background_tasks/tasks.py
 
-from sqlalchemy.future import select
-from app.celery import celery_app
-from app.models import Assignment, Notification, Submission, Role
-from app.database import SessionLocal
-from datetime import datetime, timedelta, timezone
+from celery import shared_task
+from .jobs import (
+    assignment_jobs,
+    submission_jobs,
+    course_jobs,
+    notification_jobs,
+    media_jobs,
+    analytics_jobs,
+    system_jobs
+)
 
+@shared_task
+def assignment_reminder_task():
+    assignment_jobs.handle_assignment_reminders()
 
-@celery_app.task
-def send_assignment_reminders():
-    try:
-        db = SessionLocal()
+@shared_task
+def auto_grade_submissions_task(assignment_id):
+    submission_jobs.auto_grade_assignment_submissions(assignment_id)
 
-        # Get assignments due within the next 24 hours
-        upcoming_assignments = (
-            db.query(Assignment)
-            .filter(
-                Assignment.due_date <= datetime.now(timezone.utc) + timedelta(days=1),
-                Assignment.due_date > datetime.now(timezone.utc),
-            )
-            .all()
-        )
+@shared_task
+def process_plagiarism_check_task(submission_id):
+    submission_jobs.check_submission_plagiarism(submission_id)
 
-        # For each upcoming assignment, notify the corresponding students
-        for assignment in upcoming_assignments:
-            # Find all submissions for this assignment
-            submissions_for_assignment = (
-                db.query(Submission)
-                .filter(Submission.assignment_id == assignment.id)
-                .all()
-            )
+@shared_task
+def bulk_enroll_students_task(course_id, user_emails):
+    course_jobs.bulk_enroll_students(course_id, user_emails)
 
-            # For each submission, send a reminder to the student
-            for submission in submissions_for_assignment:
-                student = submission.student  # Each submission is linked to a student
-                user = (
-                    student.user
-                )  # The student has a relationship with the User model
+@shared_task
+def send_daily_digest_task():
+    notification_jobs.generate_daily_digest()
 
-                # Create and send the notification
-                notification = Notification(
-                    user_id=user.id,
-                    message=f"Reminder: Your assignment '{assignment.title}' for course '{assignment.course.title}' is due soon!",
-                )
-                db.add(notification)
-        db.commit()
-        db.close()
-    except Exception as e:
-        db.rollback()  # Ensure to rollback the session in case of failure
+@shared_task
+def process_video_transcoding_task(video_url):
+    media_jobs.transcode_video(video_url)
+
+@shared_task
+def generate_course_report_task(course_id):
+    analytics_jobs.generate_course_analytics(course_id)
+
+@shared_task
+def clean_old_submissions_task():
+    system_jobs.clean_old_submissions()
+
+@shared_task
+def update_progress_records_task():
+    analytics_jobs.update_all_student_progress()
