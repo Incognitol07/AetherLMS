@@ -63,12 +63,6 @@ async def login(
 
     access_token = create_access_token(data={"sub": user.email, "scopes": scopes})
     refresh_token = create_refresh_token(data={"sub": user.email, "scopes": scopes})
-    logger.info({
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "scopes": scopes
-    })
 
     return {
         "access_token": access_token,

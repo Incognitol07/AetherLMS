@@ -44,7 +44,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # JWT configuration
 SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15  # Expiry time in minutes for access token
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Expiry time in minutes for access token
 
 
 # Create an access token with expiration time
@@ -115,7 +115,7 @@ def verify_access_token(token: str) -> dict:
         )
 
 # Refresh token expiration time (e.g., 7 days)
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 # Create a refresh token with a longer expiration time
 def create_refresh_token(data: dict) -> str:
