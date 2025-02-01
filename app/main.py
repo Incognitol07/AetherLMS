@@ -50,6 +50,7 @@ app.add_middleware(
 
 
 # Include routers
+app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(user_router)
 app.include_router(course_router)
@@ -80,4 +81,5 @@ async def log_requests(request: Request, call_next):
 # Root endpoint for health check
 @app.get("/")
 def read_root():
+    send_assignment_reminders.delay()
     return {"message": f"{settings.APP_NAME} is running"}

@@ -1,14 +1,13 @@
 # app/background_tasks/tasks.py
 
+from sqlalchemy.future import select
 from app.celery import celery_app
-from app.models.assignment import Assignment
-from app.models.notification import Notification
-from app.models.submission import Submission
+from app.models import Assignment, Notification, Submission, Role
 from app.database import SessionLocal
 from datetime import datetime, timedelta
 
-@celery_app.task(bind=True)
-def send_assignment_reminders(self):
+@celery_app.task
+def send_assignment_reminders():
     try:
         db = SessionLocal()
 
@@ -36,9 +35,7 @@ def send_assignment_reminders(self):
                     message=f"Reminder: Your assignment '{assignment.title}' for course '{assignment.course.title}' is due soon!"
                 )
                 db.add(notification)
-
         db.commit()
         db.close()
     except Exception as e:
         db.rollback()  # Ensure to rollback the session in case of failure
-        raise self.retry(exc=e)

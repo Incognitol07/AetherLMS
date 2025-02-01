@@ -30,13 +30,13 @@ class CeleryConfig:
     accept_content = ["json"]
 
     # Celery Beat configuration for periodic tasks
-    beat_schedule = {
-        "send_assignment_reminders": {
-            "task": "app.background_tasks.tasks",
-            "schedule": timedelta(hours=1),
-            "args": (),
-        },
-    }
+    # beat_schedule = {
+    #     "send_assignment_reminders": {
+    #         "task": "app.background_tasks.jobs.send_assignment_reminders",
+    #         "schedule": timedelta(hours=1),
+    #         "args": (),
+    #     },
+    # }
 
 
 celery_config = CeleryConfig()

@@ -9,5 +9,5 @@ celery_app = Celery("app")
 celery_app.config_from_object(celery_config)
 
 # Autodiscover tasks in app modules (e.g., `tasks.py`)
-celery_app.autodiscover_tasks(["app.background_tasks.tasks"])
+celery_app.autodiscover_tasks(packages=["app.background_tasks"])
 
