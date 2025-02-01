@@ -14,5 +14,12 @@ from .dependencies import (
     get_current_admin,
     get_current_instructor,
     get_current_student,
-    get_current_user
+    get_current_user,
+    get_admin_with_permission,
+    get_moderator,
+    get_superadmin
+)
+from .seed import (
+    initialize_roles_and_permissions,
+    seed_superadmin
 )

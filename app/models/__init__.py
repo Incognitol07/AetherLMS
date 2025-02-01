@@ -15,4 +15,5 @@ from .lesson import Lesson
 from .notification import Notification
 from .payment import Payment
 from .submission import Submission
-from .association_tables import course_instructors  # Add this line
+from .permission import Permission
+from .association_tables import course_instructors, role_permission  # Add this line

@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from app.database import engine, Base
 from app.config import settings
 from app.utils import logger
-from app.utils.seed import initialize_roles
+from app.utils import initialize_roles_and_permissions, seed_superadmin
 from app.models import *
 from app.routers import *
 
@@ -23,7 +23,8 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    await initialize_roles()
+    await initialize_roles_and_permissions()
+    await seed_superadmin()
 
     try:
         yield

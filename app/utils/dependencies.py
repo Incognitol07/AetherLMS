@@ -3,11 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models.user import User
-from app.models.admin import Role, Admin
-from app.utils.security import verify_access_token
-from app.utils.helpers.auth import get_by_email
-from app.utils import logger
+from app.models import User, Admin, UserRole
+from app.utils import (
+    verify_access_token, 
+    get_by_email, 
+    logger
+    )
 
 # OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -52,6 +53,15 @@ async def get_current_user(
             logger.warning(f"Unauthorized access attempt by unknown user '{user_email}'.")
             raise credentials_exception
 
+        # Verify the role in the token matches the user's role in the database
+        token_role = payload.get("role")
+        if token_role != db_user.role.value:
+            logger.warning(f"Role mismatch for user '{user_email}'. Token role: {token_role}, DB role: {db_user.role.value}.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Role mismatch. Please log in again.",
+            )
+
         logger.info(f"User '{user_email}' authenticated successfully.")
         return db_user
     except Exception as e:
@@ -74,7 +84,7 @@ async def get_current_admin(current_user: User = Depends(get_current_user)) -> U
     Returns:
         User: The authenticated admin user object.
     """
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         logger.warning(f"Unauthorized admin access attempt by user '{current_user.email}'.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

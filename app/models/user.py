@@ -8,13 +8,11 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 from enum import Enum as PyEnum
 
-# Define the roles as an Enum
+# Define the primary user roles
 class UserRole(str, PyEnum):
     STUDENT = "student"
     INSTRUCTOR = "instructor"
     ADMIN = "admin"
-    MODERATOR = "moderator"
-    SUPERADMIN = "superadmin"
 
 class User(Base):
     __tablename__ = 'users'
@@ -25,7 +23,7 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.STUDENT, nullable=False)
     date_joined = Column(DateTime, default=func.now())
     
-    admin_info = relationship("Admin", back_populates="user")
+    admin_info = relationship("Admin", back_populates="user", uselist=False)
     students = relationship("Student", back_populates="user", uselist=False)
     instructors = relationship("Instructor", back_populates="user", uselist=False)
     notifications = relationship("Notification", back_populates="user")
