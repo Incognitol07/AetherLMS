@@ -4,5 +4,6 @@ from .auth import (
     get_by_email, 
     create_user,
     create_student,
-    create_instructor
+    create_instructor,
+    get_admin
     )

@@ -15,7 +15,6 @@ from .dependencies import (
     get_current_instructor,
     get_current_student,
     get_current_user,
-    get_admin_with_permission,
     get_moderator,
     get_superadmin,
     get_support_admin,

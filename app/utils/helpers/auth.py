@@ -2,10 +2,12 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.models import User, Student, Instructor
+from sqlalchemy.orm import selectinload
+from app.models import User, Student, Instructor, Admin
 from app.schemas.auth import UserCreate
 from app.utils import hash_password
 from uuid import UUID
+from app.utils import logger
 
 async def get_by_email(db: AsyncSession, email: str) -> User | None:
     """
@@ -21,6 +23,23 @@ async def get_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalars().first()
 
+async def get_admin(db: AsyncSession, user_id: UUID) -> Admin | None:
+    """
+    Fetch an admin by their user ID.
+    
+    Args:
+        db (AsyncSession): The database session
+        user_id (UUID): The user ID of the admin
+    
+    Returns:
+        Admin | None: Admin record if found
+    """
+    result = await db.execute(
+        select(Admin)
+        .options(selectinload(Admin.role))
+        .filter(Admin.user_id == user_id)
+    )
+    return result.scalars().first()
 async def create_user(db: AsyncSession, user: UserCreate) -> User:
     """
     Create a new user in the database.
@@ -32,12 +51,22 @@ async def create_user(db: AsyncSession, user: UserCreate) -> User:
     Returns:
         User: The newly created user object.
     """
-    hashed_password = hash_password(user.password)
-    db_user = User(full_name=user.full_name,email=user.email, hashed_password=hashed_password, role=user.role)
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
-    return db_user
+    try:
+        hashed_password = hash_password(user.password)
+        db_user = User(
+            full_name=user.full_name,
+            email=user.email,
+            hashed_password=hashed_password,
+            role=user.role
+        )
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+        return db_user
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"User creation failed: {str(e)}")
+        raise
 
 async def create_student(db: AsyncSession, user_id: UUID):
     """

@@ -3,15 +3,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import UserRole, User
+from app.models import UserRole, Role
 from app.database import get_db
 from app.utils import (
     create_access_token,
     create_refresh_token,
     verify_refresh_token,
     verify_password,
-    hash_password,
     get_by_email,
+    get_admin,
     create_user,
     logger,
     create_student,
@@ -21,12 +21,20 @@ from app.schemas.auth import Token, RefreshTokenRequest, UserCreate, LoginRespon
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+ADMIN_ROLE_SCOPES = {
+    "superadmin": ["admin", "admin:super"],
+    "moderator": ["admin", "admin:moderate"],
+    "content_manager": ["admin", "admin:content"],
+    "support": ["admin", "admin:support"]
+}
+
+VALID_ADMIN_ROLES = {"superadmin", "moderator", "content_manager", "support"}
+# app/routers/auth.py
 @router.post("/login", response_model=LoginResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
-    # Fetch user from the database
     user = await get_by_email(db, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -34,19 +42,39 @@ async def login(
             detail="Incorrect email or password",
         )
 
-    # Create access and refresh tokens with the user's primary role
-    access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.value}  # Include primary role
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": user.email, "role": user.role.value}  # Include primary role
-    )
+    # Determine scopes based on user role and permissions
+    scopes = []
+    if user.role == UserRole.STUDENT:
+        scopes = ["student"]
+    elif user.role == UserRole.INSTRUCTOR:
+        scopes = ["instructor"]
+    elif user.role == UserRole.ADMIN:
+        admin = await get_admin(db, user.id)
+        if not admin or not admin.role:
+            logger.error(f"Admin role missing for user {user.id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrator account not properly configured"
+            )
+        if admin.role.name not in VALID_ADMIN_ROLES:
+            logger.error(f"Invalid admin role: {admin.role.name}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Invalid role configuration")
+        scopes = ADMIN_ROLE_SCOPES.get(admin.role.name, ["admin"])
+
+    access_token = create_access_token(data={"sub": user.email, "scopes": scopes})
+    refresh_token = create_refresh_token(data={"sub": user.email, "scopes": scopes})
+    logger.info({
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "scopes": scopes
+    })
 
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "role": user.role.value,  # Include primary role in the response
+        "scopes": scopes
     }
 
 @router.post("/refresh", response_model=Token)
@@ -54,12 +82,9 @@ async def refresh_token(
     refresh_token_request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    # Verify the refresh token
     payload = verify_refresh_token(refresh_token_request.refresh_token)
     user_email = payload.get("sub")
-    user_role = payload.get("role")
-
-    # Fetch user from the database
+    
     user = await get_by_email(db, user_email)
     if not user:
         raise HTTPException(
@@ -67,13 +92,25 @@ async def refresh_token(
             detail="Invalid refresh token",
         )
 
-    # Create a new access token
-    access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
+    # Determine scopes based on user role and permissions
+    scopes = []
+    if user.role == UserRole.STUDENT:
+        scopes = ["student"]
+    elif user.role == UserRole.INSTRUCTOR:
+        scopes = ["instructor"]
+    elif user.role == UserRole.ADMIN:
+        admin = await get_admin(db, user.id)
+        if admin.role.name not in VALID_ADMIN_ROLES:
+            logger.error(f"Invalid admin role: {admin.role.name}")
+            raise HTTPException(status_code=500, detail="Invalid role configuration")
+        scopes = ADMIN_ROLE_SCOPES.get(admin.role.name, ["admin"])
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+    access_token = create_access_token(
+        data={"sub": user.email, "scopes": scopes}
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.post("/signup")
 async def signup(

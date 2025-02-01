@@ -3,7 +3,7 @@
 import os
 import jwt
 from fastapi import Depends, HTTPException, status
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from pydantic import ValidationError
 from app.config import settings
@@ -61,7 +61,7 @@ def create_access_token(data: dict) -> str:
     to_encode = (
         data.copy()
     )  # Create a copy of the data dictionary to avoid modifying the original
-    expire = datetime.now() + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )  # Use UTC time for consistency
     to_encode.update({"token_type": "access"})
@@ -84,9 +84,11 @@ def verify_access_token(token: str) -> dict:
         HTTPException: If the token is expired, invalid, or malformed.
     """
     try:
-        payload = jwt.decode(
-            token, SECRET_KEY, algorithms=[ALGORITHM]
-        )  # Decode the token using the secret key
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Add validation
+        required_claims = {"sub", "exp", "token_type", "scopes"}
+        if not required_claims.issubset(payload.keys()):
+            raise HTTPException(status_code=401, detail="Invalid token structure")
         if payload["token_type"] != "access":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -127,7 +129,7 @@ def create_refresh_token(data: dict) -> str:
         str: The generated JWT refresh token.
     """
     to_encode = data.copy()
-    expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"token_type": "refresh"})
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -148,7 +150,11 @@ def verify_refresh_token(token: str) -> dict:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload["token_type"] != "refresh":
+        # Add validation
+        required_claims = {"sub", "exp", "token_type", "scopes"}
+        if not required_claims.issubset(payload.keys()):
+            raise HTTPException(status_code=401, detail="Invalid token structure")
+        if payload.get("token_type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type for refresh",

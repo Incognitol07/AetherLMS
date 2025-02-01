@@ -2,278 +2,103 @@
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+import jwt
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import User, Admin, UserRole
+from pydantic import BaseModel
 from app.utils import (
     verify_access_token, 
     get_by_email, 
     logger
     )
+# app/utils/dependencies/auth.py
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 
-# OAuth2 scheme for token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# Define scopes and their descriptions
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="auth/login"
+)
+
+# Update TokenData schema
+class TokenData(BaseModel):
+    email: str | None = None
+    scopes: list[str] = []
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    security_scopes: SecurityScopes,
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
 ) -> User:
-    """
-    Retrieves the current authenticated user by verifying the provided token.
+    authenticate_value = f'Bearer scope="{security_scopes.scope_str}"' if security_scopes.scopes else "Bearer"
+    
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": authenticate_value},
+    )
 
-    Args:
-        token (str): The authentication token passed in the Authorization header.
-        db (AsyncSession): The database session to query user information.
-
-    Raises:
-        HTTPException: If token validation fails or the user cannot be found.
-
-    Returns:
-        User: The authenticated user object from the database.
-    """
     try:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-        # Verify the token and retrieve user information
         payload = verify_access_token(token)
         if payload is None:
-            logger.warning("Token validation failed for a request.")
             raise credentials_exception
 
-        user_email: str = payload.get("sub")
-        if user_email is None:
-            logger.error("Invalid token payload: Missing 'sub' field.")
+        email: str = payload.get("sub")
+        token_scopes = payload.get("scopes", [])
+        
+        if email is None:
             raise credentials_exception
 
-        # Query the user by email from the database
-        db_user = await get_by_email(db, user_email)
-        if db_user is None:
-            logger.warning(f"Unauthorized access attempt by unknown user '{user_email}'.")
-            raise credentials_exception
+        token_data = TokenData(email=email, scopes=token_scopes)
+    # Replace generic Exception with specific errors
+    except jwt.PyJWTError as e:
+        logger.error(f"JWT error: {str(e)}")
+        raise credentials_exception
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error")
 
-        # Verify the role in the token matches the user's role in the database
-        token_role = payload.get("role")
-        if token_role != db_user.role.value:
-            logger.warning(f"Role mismatch for user '{user_email}'. Token role: {token_role}, DB role: {db_user.role.value}.")
+    user = await get_by_email(db, email=token_data.email)
+    if user is None:
+        raise credentials_exception
+
+    # Verify scopes
+    for scope in security_scopes.scopes:
+        if scope not in token_data.scopes:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Role mismatch. Please log in again.",
+                detail="Insufficient permissions",
+                headers={"WWW-Authenticate": authenticate_value},
             )
 
-        logger.info(f"User '{user_email}' authenticated successfully.")
-        return db_user
-    except Exception as e:
-        logger.error(f"Error during user authentication: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during authentication",
-        )
+    return user
 
-async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Ensures the current user is an admin.
+# app/utils/dependencies/auth.py
+from fastapi import Security
 
-    Args:
-        current_user (User): The authenticated user object.
+# Basic role-based scopes
+def require_scope(scope: str):
+    async def _require_scope(
+        current_user: User = Security(get_current_user, scopes=[scope])
+    ):
+        return current_user
+    return _require_scope
 
-    Raises:
-        HTTPException: If the user is not an admin.
-
-    Returns:
-        User: The authenticated admin user object.
-    """
-    if current_user.role != UserRole.ADMIN:
-        logger.warning(f"Unauthorized admin access attempt by user '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return current_user
-
-async def get_current_instructor(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Ensures the current user is an instructor.
-
-    Args:
-        current_user (User): The authenticated user object.
-
-    Raises:
-        HTTPException: If the user is not an instructor.
-
-    Returns:
-        User: The authenticated instructor user object.
-    """
-    if current_user.role != "instructor":
-        logger.warning(f"Unauthorized instructor access attempt by user '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return current_user
-
-async def get_current_student(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Ensures the current user is a student.
-
-    Args:
-        current_user (User): The authenticated user object.
-
-    Raises:
-        HTTPException: If the user is not a student.
-
-    Returns:
-        User: The authenticated student user object.
-    """
-    if current_user.role != "student":
-        logger.warning(f"Unauthorized student access attempt by user '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return current_user
-
-async def get_admin_with_permission(permission: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)) -> Admin:
-    """
-    Ensures the current admin has a specific permission.
-
-    Args:
-        permission (str): The permission to check.
-        db (AsyncSession): The database session.
-        current_user (User): The authenticated admin user object.
-
-    Raises:
-        HTTPException: If the admin does not have the required permission.
-
-    Returns:
-        Admin: The authenticated admin user object with the required permission.
-    """
-    admin = await db.execute(
-        select(Admin).filter(Admin.user_id == current_user.id)
-    )
-    admin = admin.scalars().first()
-
-    if not admin or not admin.has_permission(permission):
-        logger.warning(f"Unauthorized access attempt by admin '{current_user.email}' for permission '{permission}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"You do not have permission to {permission}",
-        )
-    return admin
-
-async def get_superadmin(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)) -> Admin:
-    """
-    Ensures the current admin is a superadmin.
-
-    Args:
-        db (AsyncSession): The database session.
-        current_user (User): The authenticated admin user object.
-
-    Raises:
-        HTTPException: If the admin is not a superadmin.
-
-    Returns:
-        Admin: The authenticated superadmin user object.
-    """
-    admin = await db.execute(
-        select(Admin).filter(Admin.user_id == current_user.id)
-    )
-    admin = admin.scalars().first()
-
-    if not admin or not admin.role or admin.role.name != "superadmin":
-        logger.warning(f"Unauthorized superadmin access attempt by admin '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return admin
-
-async def get_moderator(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)) -> Admin:
-    """
-    Ensures the current admin is a moderator.
-
-    Args:
-        db (AsyncSession): The database session.
-        current_user (User): The authenticated admin user object.
-
-    Raises:
-        HTTPException: If the admin is not a moderator.
-
-    Returns:
-        Admin: The authenticated moderator user object.
-    """
-    admin = await db.execute(
-        select(Admin).filter(Admin.user_id == current_user.id)
-    )
-    admin = admin.scalars().first()
-
-    if not admin or not admin.role or admin.role.name != "moderator":
-        logger.warning(f"Unauthorized moderator access attempt by admin '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return admin
-
-async def get_content_manager(
-    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)
-) -> Admin:
-    """
-    Ensures the current admin is a content manager.
-
-    Args:
-        db (AsyncSession): The database session.
-        current_user (User): The authenticated admin user object.
-
-    Raises:
-        HTTPException: If the admin is not a content manager.
-
-    Returns:
-        Admin: The authenticated content manager user object.
-    """
-    admin = await db.execute(
-        select(Admin).filter(Admin.user_id == current_user.id)
-    )
-    admin = admin.scalars().first()
-
-    if not admin or not admin.role or admin.role.name != "content_manager":
-        logger.warning(f"Unauthorized content manager access attempt by admin '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return admin
+def require_admin_subscope(scope: str):
+    async def _require_admin_subscope(
+        current_user: User = Security(get_current_user, scopes=["admin", scope])
+    ):
+        return current_user
+    return _require_admin_subscope
 
 
-async def get_support_admin(
-    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_admin)
-) -> Admin:
-    """
-    Ensures the current admin is a support admin.
-
-    Args:
-        db (AsyncSession): The database session.
-        current_user (User): The authenticated admin user object.
-
-    Raises:
-        HTTPException: If the admin is not a support admin.
-
-    Returns:
-        Admin: The authenticated support admin user object.
-    """
-    admin = await db.execute(
-        select(Admin).filter(Admin.user_id == current_user.id)
-    )
-    admin = admin.scalars().first()
-
-    if not admin or not admin.role or admin.role.name != "support":
-        logger.warning(f"Unauthorized support admin access attempt by admin '{current_user.email}'.")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource",
-        )
-    return admin
-
+# Specific scope dependencies
+get_current_student = require_scope("student")
+get_current_instructor = require_scope("instructor")
+get_current_admin = require_scope("admin")
+get_superadmin = require_admin_subscope("admin:super")
+get_moderator = require_admin_subscope("admin:moderate")
+get_content_manager = require_admin_subscope("admin:content")
+get_support_admin = require_admin_subscope("admin:support")

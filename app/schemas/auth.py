@@ -11,7 +11,7 @@ class RefreshTokenRequest(BaseModel):
 
 class LoginResponse(Token):
     refresh_token: str
-    role: UserRole
+    scopes: list
 
 
 
