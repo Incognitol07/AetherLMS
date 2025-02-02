@@ -4,6 +4,7 @@ from sqlalchemy import Column, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
+from .enrollment import EnrollmentStatus
 
 class Student(Base):
     __tablename__ = 'students'
@@ -12,6 +13,7 @@ class Student(Base):
     user = relationship("User", back_populates="students")
     submissions = relationship("Submission", back_populates="student")
     analytics = relationship("Analytics", back_populates="student")
+    enrollments = relationship("Enrollment", back_populates="student")
 
     def add_submission(self, submission: "Submission"): # type: ignore
         """Add a submission for the student."""
@@ -20,3 +22,8 @@ class Student(Base):
     def update_progress(self, progress_data: dict):
         """Update the student's course progress."""
         self.progress.update(progress_data)
+
+    def get_active_enrollments(self):
+        """Return all active course enrollments."""
+        return [enrollment for enrollment in self.enrollments
+                if enrollment.status == EnrollmentStatus.ACTIVE]

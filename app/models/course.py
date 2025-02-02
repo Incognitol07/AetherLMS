@@ -1,12 +1,13 @@
 # app/models/course.py
 
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, Enum
+from sqlalchemy import Column, String, Text, DateTime, Enum, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
-from .association_tables import course_instructors  # Import from the new file
+from .association_tables import course_instructors 
 from .module import Module
+from .enrollment import EnrollmentStatus
 
 class Course(Base):
     __tablename__ = "courses"
@@ -17,6 +18,8 @@ class Course(Base):
     start_date = Column(DateTime)
     end_date = Column(DateTime)
     status = Column(Enum("active", "completed", "archived", name="course_status"), default="active")
+    enrollment_count = Column(Integer, default=0)
+    instructor_count = Column(Integer, default=0)
 
     # Many-to-Many Relationship with Instructors (using string-based reference)
     instructors = relationship("Instructor", secondary=course_instructors, back_populates="courses")
@@ -26,6 +29,7 @@ class Course(Base):
     assignments = relationship("Assignment", back_populates="course")
     discussions = relationship("Discussion", back_populates="course")
     payments = relationship("Payment", back_populates="course")
+    enrollments = relationship("Enrollment", back_populates="course")
 
     def add_instructor(self, instructor: "Instructor"): # type: ignore
         """Add an instructor to the course."""
@@ -46,3 +50,12 @@ class Course(Base):
     def get_active_modules(self):
         """Return all active modules in the course."""
         return [module for module in self.modules if module.status == 'active']
+    
+    def get_active_enrollments(self):
+        """Return all active enrollments."""
+        return [enrollment for enrollment in self.enrollments 
+                if enrollment.status == EnrollmentStatus.ACTIVE]
+
+    def get_enrollment_count(self):
+        """Return total number of enrollments."""
+        return len(self.enrollments)

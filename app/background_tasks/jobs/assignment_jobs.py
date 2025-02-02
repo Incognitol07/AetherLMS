@@ -1,16 +1,19 @@
 # app/background_tasks/jobs/assignment_jobs.py
-from app.models import Assignment, Notification, BackgroundTask
+from app.models import Assignment, Notification
 from app.database import SessionLocal
 from datetime import datetime, timedelta, timezone
+from sqlalchemy import select, update, delete
 
-def handle_assignment_reminders():
-    db = SessionLocal()
-    try:
-        upcoming_assignments = db.query(Assignment).filter(
-            Assignment.due_date <= datetime.now(timezone.utc) + timedelta(hours=24),
-            Assignment.due_date > datetime.now(timezone.utc)
-        ).all()
-
+async def handle_assignment_reminders():
+    async with SessionLocal() as db:
+        result = await db.execute(
+            select(Assignment).where(
+                Assignment.due_date <= datetime.now(timezone.utc) + timedelta(hours=24),
+                Assignment.due_date > datetime.now(timezone.utc)
+            )
+        )
+        upcoming_assignments = result.scalars().all()
+        
         for assignment in upcoming_assignments:
             for submission in assignment.submissions:
                 if not submission.submitted_at:
@@ -20,12 +23,10 @@ def handle_assignment_reminders():
                     )
                     db.add(notification)
         db.commit()
-    finally:
-        db.close()
 
-def close_expired_assignments():
-    db = SessionLocal()
-    try:
+# TODO: make completely async 
+async def close_expired_assignments():
+    async with SessionLocal() as db:
         expired_assignments = db.query(Assignment).filter(
             Assignment.due_date < datetime.now(timezone.utc)
         ).all()
@@ -36,5 +37,3 @@ def close_expired_assignments():
                 if not submission.submitted_at:
                     submission.status = 'late'
         db.commit()
-    finally:
-        db.close()

@@ -6,11 +6,12 @@ from .jobs import (
     submission_jobs,
     course_jobs,
     notification_jobs,
-    media_jobs,
     analytics_jobs,
     system_jobs
 )
 
+
+# TODO: actually, out tasks that exists not nonexistent tasks that have not been created
 @shared_task
 def assignment_reminder_task():
     assignment_jobs.handle_assignment_reminders()
@@ -30,10 +31,6 @@ def bulk_enroll_students_task(course_id, user_emails):
 @shared_task
 def send_daily_digest_task():
     notification_jobs.generate_daily_digest()
-
-@shared_task
-def process_video_transcoding_task(video_url):
-    media_jobs.transcode_video(video_url)
 
 @shared_task
 def generate_course_report_task(course_id):
