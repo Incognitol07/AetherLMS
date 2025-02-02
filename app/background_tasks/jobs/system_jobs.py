@@ -9,7 +9,7 @@ from app.models import Submission, Notification, BackgroundTaskType, Notificatio
 from sqlalchemy import delete, select
 
 
-# @with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
+@with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
 async def clean_old_submissions(days=365, task_id: uuid.UUID = None):
     async with AsyncSessionLocal() as db:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
@@ -36,13 +36,13 @@ async def clean_old_submissions(days=365, task_id: uuid.UUID = None):
         return f"Deleted {deleted_count} old submissions"
 
 
-# @with_task_tracking(BackgroundTaskType.DATA_BACKUP)
+@with_task_tracking(BackgroundTaskType.DATA_BACKUP)
 async def perform_database_backup():
     # Implementation for database backup
     pass
 
 
-# @with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
+@with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
 async def clean_old_tasks(days=30):
     async with AsyncSessionLocal() as db:
         await db.execute(

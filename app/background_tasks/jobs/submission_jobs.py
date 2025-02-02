@@ -19,7 +19,7 @@ from app.database import AsyncSessionLocal
 from ..decorators import with_task_tracking
 
 
-# @with_task_tracking(BackgroundTaskType.PLAGIARISM)
+@with_task_tracking(BackgroundTaskType.PLAGIARISM)
 async def check_submission_plagiarism(submission_id: uuid.UUID) -> Dict[str, Any]:
     """
     Enhanced plagiarism detection with:
@@ -184,7 +184,7 @@ async def handle_plagiarism_alert(submission: Submission):
         db.add(student_notification)
 
 
-# @with_task_tracking(BackgroundTaskType.GRADE)
+@with_task_tracking(BackgroundTaskType.GRADE)
 async def notify_instructors_for_grading(assignment_id: uuid.UUID):
     """Enhanced grading notification with submission context"""
     async with AsyncSessionLocal() as db:

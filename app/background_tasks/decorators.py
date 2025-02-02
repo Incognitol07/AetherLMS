@@ -39,6 +39,6 @@ def with_task_tracking(task_type: BackgroundTaskType):
             except Exception as e:
                 await update_task_status(task_id, "failed", str(e))
                 raise
-            return wrapper
+        return wrapper
 
-        return decorator
+    return decorator

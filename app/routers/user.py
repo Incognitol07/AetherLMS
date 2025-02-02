@@ -121,9 +121,9 @@ async def update_user_role(user_id: str, role: UserRole, db: AsyncSession = Depe
 
 # List users by role (admin-only)
 @router.get("/role/{role}")
-async def update_user_role( role: UserRole, db: AsyncSession = Depends(get_db), current_admin:User = Depends(get_current_admin)):
+async def get_user_role( role: UserRole, db: AsyncSession = Depends(get_db), current_admin:User = Depends(get_current_admin)):
     if role == UserRole.ADMIN:
-        if current_admin.admin_info.role.value!="superadmin":
+        if current_admin.admin_info.role.name!="superadmin":
             return
 
     result = await db.execute(select(User).where(User.role == role))

@@ -1,9 +1,8 @@
-from datetime import timedelta
 from celery.beat import crontab
 
 class CeleryConfig:
     # Use RabbitMQ as the message broker
-    broker_url = "pyamqp://guest:guest@localhost//"
+    broker_url = "amqp://guest:guest@localhost:5672//"
 
     # Use a database or RPC as a result backend (RabbitMQ doesn't support result storage natively)
     result_backend = "rpc://"
@@ -29,12 +28,12 @@ class CeleryConfig:
     worker_task_log_format = "%(asctime)s - %(task_name)s - %(levelname)s - %(message)s"
     task_serializer = "json"
     accept_content = ["json"]
-    beat_schedule = {
-        'clean-submissions-weekly': {
-            'task': 'app.background_tasks.tasks.clean_old_submissions_task',
-            'schedule': crontab(day_of_week='sunday', hour=4)
-        },
-    }
+    # beat_schedule = {
+    #     'clean-submissions-weekly': {
+    #         'task': 'app.background_tasks.tasks.clean_old_submissions_task',
+    #         'schedule': crontab(day_of_week='sunday', hour=4)
+    #     },
+    # }
 
 
 celery_config = CeleryConfig()

@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 
-# @with_task_tracking(BackgroundTaskType.ASSIGNMENT)
+@with_task_tracking(BackgroundTaskType.ASSIGNMENT)
 async def handle_assignment_reminders(task_id: uuid.UUID = None):
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -39,7 +39,7 @@ async def handle_assignment_reminders(task_id: uuid.UUID = None):
         await db.commit()
 
 
-# @with_task_tracking(BackgroundTaskType.ASSIGNMENT)
+@with_task_tracking(BackgroundTaskType.ASSIGNMENT)
 async def close_expired_assignments(task_id: uuid.UUID = None):
     async with AsyncSessionLocal() as db:
         await db.execute(

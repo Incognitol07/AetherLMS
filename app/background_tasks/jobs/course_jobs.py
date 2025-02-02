@@ -20,7 +20,7 @@ from app.models import (
 )
 
 
-# @with_task_tracking(BackgroundTaskType.ENROLLMENT)
+@with_task_tracking(BackgroundTaskType.ENROLLMENT)
 async def bulk_enroll_students(
     course_id: uuid.UUID, user_emails: list[str], task_id: uuid.UUID = None
 ):
@@ -84,7 +84,7 @@ async def bulk_enroll_students(
         await update_course_enrollment_stats(course_id)
 
 
-# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
+@with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def archive_completed_courses():
     """Archive courses that ended over 30 days ago and their related content"""
     async with AsyncSessionLocal() as db:
@@ -122,7 +122,7 @@ async def archive_completed_courses():
         await db.commit()
 
 
-# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
+@with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def manage_course_instructors(
     course_id: uuid.UUID,
     instructor_ids: list[uuid.UUID],
@@ -172,7 +172,7 @@ async def manage_course_instructors(
         await update_course_instructor_stats(course_id)
 
 
-# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
+@with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def process_course_expirations():
     """Notify users about upcoming course expirations"""
     async with AsyncSessionLocal() as db:
@@ -217,7 +217,7 @@ async def process_course_expirations():
         await db.commit()
 
 
-# @with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
+@with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
 async def reconcile_payments():
     """Clean up unpaid enrollments after 7 days"""
     async with AsyncSessionLocal() as db:
@@ -292,7 +292,7 @@ async def update_course_instructor_stats(course_id: uuid.UUID):
         await db.commit()
 
 
-# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
+@with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def publish_scheduled_modules():
     """Activate modules based on their scheduled publish dates"""
     async with AsyncSessionLocal() as db:

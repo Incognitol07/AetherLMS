@@ -38,7 +38,3 @@ class User(Base):
     def add_payment(self, payment: "Payment"): # type: ignore
         """Add a payment made by the user."""
         self.payments.append(payment)
-
-    def get_full_name(self):
-        """Return the user's full name."""
-        return self.full_name
