@@ -1,6 +1,6 @@
 # app/models/submission.py
 
-from sqlalchemy import Column, String,ForeignKey, DateTime, Float
+from sqlalchemy import Column, String,ForeignKey, DateTime, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,9 +13,11 @@ class Submission(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     assignment_id = Column(UUID(as_uuid=True), ForeignKey('assignments.id'))
     student_id = Column(UUID(as_uuid=True), ForeignKey('students.id'))
-    submission_url = Column(String)
+    content = Column(String)
     submitted_at = Column(DateTime, default=func.now())
     grade = Column(Float, nullable=True)
+    plagiarism_score= Column(Float)
+    plagiarism_report= Column(JSON, default={})
     
     assignment = relationship("Assignment", back_populates="submissions")
     student = relationship("Student", back_populates="submissions")

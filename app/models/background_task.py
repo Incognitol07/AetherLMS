@@ -13,11 +13,10 @@ class BackgroundTaskType(str, PyEnum):
     GRADE='grade_calculation'
     ENROLLMENT='bulk_enrollment'
     PROGRESS_REPORT='progress_report'
-    CONTENT_UPDATE='content_update'
-    NOTIFICATION='notification_digest'
-    VIDEO_PROCESSING='video_processing'
-    DATA_EXPORT='data_export'
+    COURSE_DATA='course_data'
+    DATA_BACKUP='data_backup'
     PLAGIARISM='plagiarism_check'
+    DATA_CLEANUP='data_cleanup'
 
 class BackgroundTask(Base):
     __tablename__ = 'background_tasks'

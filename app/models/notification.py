@@ -18,6 +18,7 @@ class NotificationType(str, PyEnum):
     DISCUSSION = "discussion"
     INSTRUCTOR = "instructor"
     DEADLINE = "deadline"
+    PLAGIARISM="plagiarism"
 
 class Notification(Base):
     __tablename__ = 'notifications'
@@ -27,6 +28,7 @@ class Notification(Base):
     notification_type = Column(Enum(NotificationType), nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
+    additional_data = Column(JSON, default={})
     
     user = relationship("User", back_populates="notifications")
 

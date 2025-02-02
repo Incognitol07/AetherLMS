@@ -11,7 +11,7 @@ from .analytics import Analytics
 from .instructor import Instructor
 from .comment import Comment
 from .discussion import Discussion
-from .background_task import BackgroundTask
+from .background_task import BackgroundTask, BackgroundTaskType
 from .lesson import Lesson
 from .notification import Notification, NotificationType
 from .payment import Payment

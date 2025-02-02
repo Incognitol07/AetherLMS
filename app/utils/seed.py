@@ -1,13 +1,14 @@
 # app/utils/seed.py
 
 from app.models import User, Role, Admin, UserRole, Permission
-from app.database import SessionLocal
+from app.database import AsyncSessionLocal
 from sqlalchemy.future import select
 from app.utils import hash_password
 from sqlalchemy.sql import func
 
+
 async def initialize_roles_and_permissions():
-    async with SessionLocal() as db:
+    async with AsyncSessionLocal() as db:
         try:
             # Define permissions
             permissions = [
@@ -48,10 +49,33 @@ async def initialize_roles_and_permissions():
 
             # Assign permissions to roles
             roles[0].permissions = permissions  # superadmin has all permissions
-            roles[1].permissions = [perm for perm in permissions if perm.name not in ["manage_roles", "manage_admins"]]  # admin
-            roles[2].permissions = [perm for perm in permissions if perm.name in ["view_reports", "manage_content", "manage_comments", "manage_discussions"]]  # moderator
-            roles[3].permissions = [perm for perm in permissions if perm.name in ["manage_content", "manage_courses", "manage_announcements"]]  # content manager
-            roles[4].permissions = [perm for perm in permissions if perm.name in ["manage_support_tickets", "view_reports"]]  # support
+            roles[1].permissions = [
+                perm
+                for perm in permissions
+                if perm.name not in ["manage_roles", "manage_admins"]
+            ]  # admin
+            roles[2].permissions = [
+                perm
+                for perm in permissions
+                if perm.name
+                in [
+                    "view_reports",
+                    "manage_content",
+                    "manage_comments",
+                    "manage_discussions",
+                ]
+            ]  # moderator
+            roles[3].permissions = [
+                perm
+                for perm in permissions
+                if perm.name
+                in ["manage_content", "manage_courses", "manage_announcements"]
+            ]  # content manager
+            roles[4].permissions = [
+                perm
+                for perm in permissions
+                if perm.name in ["manage_support_tickets", "view_reports"]
+            ]  # support
 
             # Insert roles into the database if they don't exist
             for role in roles:
@@ -68,8 +92,9 @@ async def initialize_roles_and_permissions():
         finally:
             await db.close()
 
+
 async def seed_superadmin():
-    async with SessionLocal() as db:
+    async with AsyncSessionLocal() as db:
         try:
             # Check if superadmin already exists
             superadmin_email = "superadmin@example.com"
@@ -98,7 +123,9 @@ async def seed_superadmin():
             superadmin_role = superadmin_role.scalars().first()
 
             if not superadmin_role:
-                raise Exception("Superadmin role not found. Please initialize roles first.")
+                raise Exception(
+                    "Superadmin role not found. Please initialize roles first."
+                )
 
             # Assign the superadmin role to the user
             admin = Admin(

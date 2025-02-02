@@ -1,9 +1,10 @@
 # app/background_tasks/jobs/course_jobs.py
 from sqlalchemy import select, update, delete, and_
 from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import AsyncSessionLocal
 from datetime import datetime, timedelta, timezone
 import uuid
+from ..decorators import with_task_tracking
 
 from app.models import (
     Course,
@@ -15,15 +16,19 @@ from app.models import (
     Payment,
     Notification,
     NotificationType,
+    BackgroundTaskType
 )
 
-# TODO: Check all attributes if each model put exists
-async def bulk_enroll_students(course_id: uuid.UUID, user_emails: list[str]):
+
+# @with_task_tracking(BackgroundTaskType.ENROLLMENT)
+async def bulk_enroll_students(
+    course_id: uuid.UUID, user_emails: list[str], task_id: uuid.UUID = None
+):
     """
     Enroll multiple students in a course after verifying eligibility
     Handles duplicate enrollments gracefully
     """
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Get the course with existing enrollments
         course_result = await db.execute(
             select(Course)
@@ -79,9 +84,10 @@ async def bulk_enroll_students(course_id: uuid.UUID, user_emails: list[str]):
         await update_course_enrollment_stats(course_id)
 
 
+# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def archive_completed_courses():
     """Archive courses that ended over 30 days ago and their related content"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Find courses to archive
         result = await db.execute(
             select(Course)
@@ -116,13 +122,14 @@ async def archive_completed_courses():
         await db.commit()
 
 
+# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def manage_course_instructors(
     course_id: uuid.UUID,
     instructor_ids: list[uuid.UUID],
     action: str,  # 'add' or 'remove'
 ):
     """Bulk add or remove instructors from a course with validation"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Get course with existing instructors
         course_result = await db.execute(
             select(Course)
@@ -165,9 +172,10 @@ async def manage_course_instructors(
         await update_course_instructor_stats(course_id)
 
 
+# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def process_course_expirations():
     """Notify users about upcoming course expirations"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Find courses ending in 7 days
         result = await db.execute(
             select(Course)
@@ -209,9 +217,10 @@ async def process_course_expirations():
         await db.commit()
 
 
+# @with_task_tracking(BackgroundTaskType.DATA_CLEANUP)
 async def reconcile_payments():
     """Clean up unpaid enrollments after 7 days"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Find pending payments older than 7 days
         result = await db.execute(
             select(Payment)
@@ -251,7 +260,7 @@ async def reconcile_payments():
 
 async def update_course_enrollment_stats(course_id: uuid.UUID):
     """Update course enrollment metrics"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Get enrollment count
         enrollments_count = await db.scalar(
             select(Enrollment).where(Enrollment.course_id == course_id).count()
@@ -269,7 +278,7 @@ async def update_course_enrollment_stats(course_id: uuid.UUID):
 
 async def update_course_instructor_stats(course_id: uuid.UUID):
     """Update course instructor count"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         instructor_count = await db.scalar(
             select(Course.instructors).where(Course.id == course_id).count()
         )
@@ -283,9 +292,10 @@ async def update_course_instructor_stats(course_id: uuid.UUID):
         await db.commit()
 
 
+# @with_task_tracking(BackgroundTaskType.COURSE_DATA)
 async def publish_scheduled_modules():
     """Activate modules based on their scheduled publish dates"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Assuming Module has publish_date and status fields
         result = await db.execute(
             select(Module).where(
@@ -305,7 +315,7 @@ async def publish_scheduled_modules():
 
 async def notify_module_publication(module_id: uuid.UUID):
     """Notify students when a new module is published"""
-    async with AsyncSession() as db:
+    async with AsyncSessionLocal() as db:
         # Get module with course and enrollments
         module_result = await db.execute(
             select(Module)

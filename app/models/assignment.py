@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Text, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from app.database import Base
 
 
@@ -15,7 +16,8 @@ class Assignment(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     due_date = Column(DateTime)
-    file_upload_url = Column(String)
+    content = Column(String)
+    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
     
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")

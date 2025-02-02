@@ -1,7 +1,8 @@
 # app/models/user.py
 
-from sqlalchemy import Column, String, Text, ForeignKey, Float
+from sqlalchemy import Column, String, Text, ForeignKey, Float, DateTime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 from app.database import Base
@@ -14,6 +15,7 @@ class Module(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     order = Column(Float)
+    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
     
     course = relationship("Course", back_populates="modules")
     lessons = relationship("Lesson", back_populates="module")

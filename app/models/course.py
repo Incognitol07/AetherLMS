@@ -1,9 +1,10 @@
 # app/models/course.py
 
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, Enum, Integer
+from sqlalchemy import Column, String, Text, DateTime, Enum, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from app.database import Base
 from .association_tables import course_instructors 
 from .module import Module
@@ -20,6 +21,8 @@ class Course(Base):
     status = Column(Enum("active", "completed", "archived", name="course_status"), default="active")
     enrollment_count = Column(Integer, default=0)
     instructor_count = Column(Integer, default=0)
+    is_free = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
 
     # Many-to-Many Relationship with Instructors (using string-based reference)
     instructors = relationship("Instructor", secondary=course_instructors, back_populates="courses")
