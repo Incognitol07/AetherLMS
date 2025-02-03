@@ -1,7 +1,6 @@
 # app/celery.py
 
 from celery import Celery
-from kombu.serialization import register
 
 # Ensure async support
 celery_app = Celery(

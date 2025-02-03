@@ -33,7 +33,7 @@ async def clean_old_submissions(days=365, task_id: uuid.UUID = None):
 
         await db.execute(delete(Submission).where(Submission.submitted_at < cutoff))
         await db.commit()
-        return f"Deleted {deleted_count} old submissions"
+    return f"Deleted {deleted_count} old submissions"
 
 
 @with_task_tracking(BackgroundTaskType.DATA_BACKUP)

@@ -67,7 +67,7 @@ async def check_submission_plagiarism(submission_id: uuid.UUID) -> Dict[str, Any
             await handle_plagiarism_alert(submission)
 
         await db.commit()
-        return submission.plagiarism_report
+    return submission.plagiarism_report
 
 
 def preprocess_content(content: str) -> str:
