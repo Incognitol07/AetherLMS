@@ -44,11 +44,11 @@ from app.utils import (
 # Add other background task endpoints (GET /background-tasks/{task_id}, PUT /background-tasks/{task_id}, etc.)
 
 # app/routers/background_tasks.py
-from app.background_tasks.tasks import database_backup_task
+# from app.background_tasks.tasks import database_backup_task
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+# router = APIRouter(prefix="/tasks", tags=["tasks"])
 
-@router.get("/trigger-backup")
-async def trigger_backup():
-    task = database_backup_task.delay()
-    return {"message": "Backup initiated", "task_id": task.id}
+# @router.get("/trigger-backup")
+# async def trigger_backup():
+#     task = database_backup_task.delay()
+#     return {"message": "Backup initiated", "task_id": task.id}

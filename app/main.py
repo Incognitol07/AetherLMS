@@ -12,6 +12,7 @@ from app.utils import logger
 from app.utils import initialize_roles_and_permissions, seed_superadmin
 from app.models import *
 from app.routers import *
+from app.background_tasks.jobs import system_jobs
 
 # Create the FastAPI application
 @asynccontextmanager
@@ -82,4 +83,5 @@ async def log_requests(request: Request, call_next):
 # Root endpoint for health check
 @app.get("/")
 def read_root():
+    system_jobs.clean_old_submissions.delay()
     return {"message": f"{settings.APP_NAME} is running"}
