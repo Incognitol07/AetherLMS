@@ -10,7 +10,7 @@ from app.utils import (
     logger
     )
 
-# router = APIRouter(prefix="/background-tasks", tags=["background-tasks"])
+router = APIRouter(prefix="/background-tasks", tags=["background-tasks"])
 
 
 # @router.post("/")
