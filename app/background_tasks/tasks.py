@@ -37,7 +37,7 @@ async def database_backup_task(self):
 async def cleanup_tasks(self):
     await system_jobs.clean_old_tasks
 
-@shared_task(bind=True)(bind=True)
+@shared_task(bind=True)
 async def bulk_enroll_students_task(self, course_id, user_emails):
     await course_jobs.bulk_enroll_students(course_id, user_emails)
 
