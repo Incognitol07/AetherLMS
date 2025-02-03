@@ -38,5 +38,5 @@ class BackgroundTask(Base):
     parameters = Column(JSON, comment="Task-specific parameters in JSON format")
     result = Column(Text, comment="Task execution result or error message")
 
-    created_at = Column(DateTime, default=func.now)
-    updated_at = Column(DateTime, default=func.now, onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), default=func.now())
+    updated_at = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
