@@ -4,18 +4,22 @@ from app.models import BackgroundTask, BackgroundTaskType
 from app.database import AsyncSessionLocal
 from sqlalchemy import update
 import uuid
+from functools import wraps
+from celery import shared_task
 
 
 
 async def create_task_record(task_type: BackgroundTaskType, parameters: dict = None):
     async with AsyncSessionLocal() as db:
         task = BackgroundTask(
-            task_type=task_type, parameters=parameters, status="pending"
+            task_type=task_type, 
+            parameters=parameters, 
+            status="pending"
         )
         db.add(task)
         await db.commit()
+        await db.refresh(task)
         return task.id
-
 
 async def update_task_status(task_id: uuid.UUID, status: str, result: str = None):
     async with AsyncSessionLocal() as db:
@@ -27,9 +31,12 @@ async def update_task_status(task_id: uuid.UUID, status: str, result: str = None
         await db.commit()
 
 
+
 def with_task_tracking(task_type: BackgroundTaskType):
     def decorator(func):
-        async def wrapper(*args, **kwargs):
+        @shared_task(bind=True)  # Bind the task for access to `self`
+        @wraps(func)  # Preserve function metadata
+        async def async_wrapper(self, *args, **kwargs):
             task_id = await create_task_record(task_type, kwargs)
             try:
                 await update_task_status(task_id, "processing")
@@ -38,7 +45,6 @@ def with_task_tracking(task_type: BackgroundTaskType):
                 return result
             except Exception as e:
                 await update_task_status(task_id, "failed", str(e))
-                raise
-        return wrapper
-
+                raise self.retry(exc=e)  # Enable retry logic
+        return async_wrapper
     return decorator

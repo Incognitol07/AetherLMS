@@ -1,13 +1,18 @@
 # app/celery.py
 
 from celery import Celery
-from app.celery_config import celery_config
+from kombu.serialization import register
 
-celery_app = Celery("aetherlms")
-
-# Load configuration from our Celery config class
-celery_app.config_from_object(celery_config)
-
+# Ensure async support
+celery_app = Celery(
+    "aetherlms",
+    broker="amqp://guest:guest@localhost:5672//",
+    result_backend="rpc://",
+    task_serializer="json",
+    accept_content=["json"],
+    enable_utc=True,
+    broker_connection_retry_on_startup=True,
+)
 # Autodiscover tasks in app modules (e.g., `tasks.py`)
 celery_app.autodiscover_tasks(packages=["app.background_tasks"])
 
