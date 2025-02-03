@@ -31,10 +31,6 @@ class BackgroundTask(Base):
         name='task_status'
     ), default='pending')
     
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
-    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
-    assignment_id = Column(UUID(as_uuid=True), ForeignKey('assignments.id'))
-    
     parameters = Column(JSON, comment="Task-specific parameters in JSON format")
     result = Column(Text, comment="Task execution result or error message")
 
