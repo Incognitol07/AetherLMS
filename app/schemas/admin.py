@@ -55,8 +55,7 @@ class AdminUpdate(BaseModel):
     """
     role_id: Optional[UUID] = Field(
         None,
-        description="ID of the role to assign to the admin",
-        example="123e4567-e89b-12d3-a456-426614174001"
+        description="ID of the role to assign to the admin"
     )
 
 

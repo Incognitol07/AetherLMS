@@ -1,5 +1,6 @@
 # app/routers/course.py
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -37,7 +38,7 @@ async def create_course(
 
 
 @router.get("/{course_id}")
-async def get_course(course_id: str, db: AsyncSession = Depends(get_db)):
+async def get_course(course_id: UUID, db: AsyncSession = Depends(get_db)):
     course = await db.execute(select(Course).where(Course.id == course_id))
     course = course.scalar_one_or_none()
     if not course:

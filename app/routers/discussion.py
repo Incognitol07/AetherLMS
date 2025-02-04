@@ -1,5 +1,6 @@
 # app/routers/discussion.py
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -34,7 +35,7 @@ async def create_discussion(
 
 @router.post("/{discussion_id}/comments")
 async def add_comment(
-    discussion_id: str,
+    discussion_id: UUID,
     comment_data: dict,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

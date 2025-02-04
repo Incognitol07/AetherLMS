@@ -1,5 +1,6 @@
 # app/routers/assignment.py
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -37,7 +38,7 @@ async def create_assignment(
 
 @router.post("/{assignment_id}/submissions")
 async def submit_assignment(
-    assignment_id: str,
+    assignment_id: UUID,
     submission_data: dict,
     db: AsyncSession = Depends(get_db),
     current_user: Student = Depends(get_current_student),

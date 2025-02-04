@@ -1,5 +1,6 @@
 # app/routers/notification.py
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -25,7 +26,7 @@ async def list_notifications(
 
 @router.put("/{notification_id}")
 async def mark_notification_as_read(
-    notification_id: str,
+    notification_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

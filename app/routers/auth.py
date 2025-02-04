@@ -11,7 +11,7 @@ from app.utils import (
     verify_refresh_token,
     verify_password,
     get_by_email,
-    get_admin,
+    get_admin_by_id,
     create_user,
     logger,
     create_student,
@@ -49,7 +49,7 @@ async def login(
     elif user.role == UserRole.INSTRUCTOR:
         scopes = ["instructor"]
     elif user.role == UserRole.ADMIN:
-        admin = await get_admin(db, user.id)
+        admin = await get_admin_by_id(db, user.id)
         if not admin or not admin.role:
             logger.error(f"Admin role missing for user {user.id}")
             raise HTTPException(
@@ -93,7 +93,7 @@ async def refresh_token(
     elif user.role == UserRole.INSTRUCTOR:
         scopes = ["instructor"]
     elif user.role == UserRole.ADMIN:
-        admin = await get_admin(db, user.id)
+        admin = await get_admin_by_id(db, user.id)
         if admin.role.name not in VALID_ADMIN_ROLES:
             logger.error(f"Invalid admin role: {admin.role.name}")
             raise HTTPException(status_code=500, detail="Invalid role configuration")

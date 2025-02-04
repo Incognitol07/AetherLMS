@@ -1,5 +1,6 @@
 # app/routers/analytics.py
 
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -27,7 +28,7 @@ async def get_analytics(
 
 @router.get("/{student_id}")
 async def get_student_analytics(
-    student_id: str,
+    student_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_instructor),
 ):

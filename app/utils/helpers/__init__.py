@@ -5,6 +5,7 @@ from .auth import (
     create_user,
     create_student,
     create_instructor,
-    get_admin,
-    get_role_by_name
+    get_admin_by_id,
+    get_role_by_name,
+    get_role_by_id
     )

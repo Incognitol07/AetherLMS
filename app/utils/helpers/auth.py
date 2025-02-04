@@ -25,11 +25,11 @@ async def get_by_email(db: AsyncSession, email: str) -> User | None:
 
 async def get_role_by_name(db: AsyncSession, name: str) -> Role | None:
     """
-    Fetch a user by their email address.
+    Fetch a role by its name.
 
     Args:
         db (AsyncSession): The database session.
-        email (str): The email address of the user.
+        name (name): The name of the role.
 
     Returns:
         User | None: The user object if found, otherwise None.
@@ -37,7 +37,21 @@ async def get_role_by_name(db: AsyncSession, name: str) -> Role | None:
     result = await db.execute(select(Role).filter(Role.name == name))
     return result.scalars().first()
 
-async def get_admin(db: AsyncSession, id: UUID) -> Admin | None:
+async def get_role_by_id(db: AsyncSession, id: UUID) -> Role | None:
+    """
+    Fetch a role by its id.
+
+    Args:
+        db (AsyncSession): The database session.
+        id (UUID): The id of the role.
+
+    Returns:
+        User | None: The user object if found, otherwise None.
+    """
+    result = await db.execute(select(Role).filter(Role.id == id))
+    return result.scalars().first()
+
+async def get_admin_by_id(db: AsyncSession, id: UUID) -> Admin | None:
     """
     Fetch an admin by their user ID.
     
@@ -50,10 +64,13 @@ async def get_admin(db: AsyncSession, id: UUID) -> Admin | None:
     """
     result = await db.execute(
         select(Admin)
-        .options(selectinload(Admin.role))
+        .options(
+            selectinload(Admin.role),
+            selectinload(Admin.user)
+            )
         .filter(Admin.id == id)
     )
-    return result.scalars().first()
+    return result.scalar()
 
 async def create_user(db: AsyncSession, user: UserCreate, is_admin:bool = False) -> User:
     """
