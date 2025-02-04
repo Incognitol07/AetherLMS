@@ -41,7 +41,6 @@ async def initialize_roles_and_permissions():
             # Define roles and their permissions
             roles = [
                 Role(name="superadmin"),
-                Role(name="admin"),
                 Role(name="moderator"),
                 Role(name="content_manager"),
                 Role(name="support"),
@@ -52,11 +51,6 @@ async def initialize_roles_and_permissions():
             roles[1].permissions = [
                 perm
                 for perm in permissions
-                if perm.name not in ["manage_roles", "manage_admins"]
-            ]  # admin
-            roles[2].permissions = [
-                perm
-                for perm in permissions
                 if perm.name
                 in [
                     "view_reports",
@@ -65,13 +59,13 @@ async def initialize_roles_and_permissions():
                     "manage_discussions",
                 ]
             ]  # moderator
-            roles[3].permissions = [
+            roles[2].permissions = [
                 perm
                 for perm in permissions
                 if perm.name
                 in ["manage_content", "manage_courses", "manage_announcements"]
             ]  # content manager
-            roles[4].permissions = [
+            roles[3].permissions = [
                 perm
                 for perm in permissions
                 if perm.name in ["manage_support_tickets", "view_reports"]
@@ -129,10 +123,8 @@ async def seed_superadmin():
 
             # Assign the superadmin role to the user
             admin = Admin(
-                user_id=superadmin.id,
-                role_id=superadmin_role.id,
-                created_at=func.now(),
-                updated_at=func.now(),
+                id=superadmin.id,
+                role_id=superadmin_role.id
             )
             db.add(admin)
             await db.commit()

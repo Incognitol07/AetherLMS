@@ -3,7 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.models import User, Student, Instructor, Admin
+from app.models import User, Student, Instructor, Admin, Role, UserRole
 from app.schemas.auth import UserCreate
 from app.utils import hash_password
 from uuid import UUID
@@ -23,13 +23,27 @@ async def get_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalars().first()
 
-async def get_admin(db: AsyncSession, user_id: UUID) -> Admin | None:
+async def get_role_by_name(db: AsyncSession, name: str) -> Role | None:
+    """
+    Fetch a user by their email address.
+
+    Args:
+        db (AsyncSession): The database session.
+        email (str): The email address of the user.
+
+    Returns:
+        User | None: The user object if found, otherwise None.
+    """
+    result = await db.execute(select(Role).filter(Role.name == name))
+    return result.scalars().first()
+
+async def get_admin(db: AsyncSession, id: UUID) -> Admin | None:
     """
     Fetch an admin by their user ID.
     
     Args:
         db (AsyncSession): The database session
-        user_id (UUID): The user ID of the admin
+        id (UUID): The user ID of the admin
     
     Returns:
         Admin | None: Admin record if found
@@ -37,10 +51,11 @@ async def get_admin(db: AsyncSession, user_id: UUID) -> Admin | None:
     result = await db.execute(
         select(Admin)
         .options(selectinload(Admin.role))
-        .filter(Admin.user_id == user_id)
+        .filter(Admin.id == id)
     )
     return result.scalars().first()
-async def create_user(db: AsyncSession, user: UserCreate) -> User:
+
+async def create_user(db: AsyncSession, user: UserCreate, is_admin:bool = False) -> User:
     """
     Create a new user in the database.
 
@@ -57,7 +72,7 @@ async def create_user(db: AsyncSession, user: UserCreate) -> User:
             full_name=user.full_name,
             email=user.email,
             hashed_password=hashed_password,
-            role=user.role
+            role=UserRole.ADMIN if is_admin else user.role
         )
         db.add(db_user)
         await db.commit()

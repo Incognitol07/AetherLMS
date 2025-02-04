@@ -50,8 +50,7 @@ class Admin(Base):
     """
     __tablename__ = "admins"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True, comment="Unique reference to the user account")
+    id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, primary_key=True,index=True, comment="Unique reference to the user account")
     role_id = Column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"),index=True, nullable=True, comment="Reference to the assigned role")
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now(), nullable=False)

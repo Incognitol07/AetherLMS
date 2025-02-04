@@ -17,7 +17,7 @@ class LoginResponse(Token):
 
 class UserBase(BaseModel):
     email: EmailStr
-    role: str
+    role: UserRole
 
 class UserCreate(UserBase):
     full_name: str

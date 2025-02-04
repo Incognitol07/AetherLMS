@@ -1,8 +1,10 @@
 # app/schemas/admin.py
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 from uuid import UUID
+from .auth import UserCreate
+from app.models import UserRole
 
 # ------------------------------ Role Schemas ------------------------------
 
@@ -39,16 +41,12 @@ class PermissionUpdate(BaseModel):
 
 # ------------------------------ Admin User Schemas ------------------------------
 
-class AdminCreate(BaseModel):
+class AdminCreate(UserCreate):
     """
     Schema for creating a new admin.
     """
-    user_id: UUID = Field(..., description="ID of the user to be assigned as an admin", example="123e4567-e89b-12d3-a456-426614174000")
-    role_id: Optional[UUID] = Field(
-        None,
-        description="ID of the role to assign to the admin",
-        example="123e4567-e89b-12d3-a456-426614174001"
-    )
+    role: Optional[UserRole] = None
+    admin_sub_role: str
 
 
 class AdminUpdate(BaseModel):
@@ -82,7 +80,6 @@ class AdminResponse(BaseModel):
     Schema for returning admin details.
     """
     id: UUID
-    user_id: UUID
     role_id: Optional[UUID]
     created_at: str
     updated_at: str
