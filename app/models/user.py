@@ -23,13 +23,13 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.STUDENT, nullable=False)
     date_joined = Column(DateTime, default=func.now())
     
-    admin_info = relationship("Admin", back_populates="user", uselist=False)
-    students = relationship("Student", back_populates="user", uselist=False)
-    instructors = relationship("Instructor", back_populates="user", uselist=False)
-    notifications = relationship("Notification", back_populates="user")
-    discussions = relationship("Discussion", back_populates="user")
-    comments = relationship("Comment", back_populates="user")
-    payments = relationship("Payment", back_populates="user")
+    admin_info = relationship("Admin", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    students = relationship("Student", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    instructors = relationship("Instructor", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    discussions = relationship("Discussion", back_populates="user",cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
 
     def add_notification(self, notification: "Notification"): # type: ignore
         """Add a notification for the user."""

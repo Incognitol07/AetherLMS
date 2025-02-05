@@ -8,7 +8,7 @@ from .enrollment import EnrollmentStatus
 
 class Student(Base):
     __tablename__ = 'students'
-    id = Column(UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), primary_key=True)
     progress = Column(JSON, default={})  # Stores course progress as JSON
     user = relationship("User", back_populates="students")
     submissions = relationship("Submission", back_populates="student")

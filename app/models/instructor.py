@@ -15,7 +15,7 @@ class InstructorAvailability(str, PyEnum):
 
 class Instructor(Base):
     __tablename__ = 'instructors'
-    id = Column(UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), primary_key=True)
     specialization = Column(String(100))
     bio = Column(Text, comment="Instructor's professional biography")
     profile_picture_url = Column(String(255))
