@@ -1,6 +1,13 @@
 # app/routers/auth.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter, 
+    Depends, 
+    HTTPException, 
+    status, 
+    Response, 
+    Request
+    )
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import UserRole, Role
@@ -16,8 +23,10 @@ from app.utils import (
     logger,
     create_student,
     create_instructor,
+    REFRESH_TOKEN_EXPIRE_DAYS
 )
-from app.schemas.auth import Token, RefreshTokenRequest, UserCreate, LoginResponse
+from app.schemas.auth import Token, UserCreate, LoginResponse
+from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -28,12 +37,10 @@ ADMIN_ROLE_SCOPES = {
     "support": ["admin", "admin:support"],
 }
 
-VALID_ADMIN_ROLES = {"superadmin", "moderator", "content_manager", "support"}
-
-
 # app/routers/auth.py
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
@@ -58,7 +65,7 @@ async def login(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrator account not properly configured",
             )
-        if admin.role.name not in VALID_ADMIN_ROLES:
+        if admin.role.name not in  ADMIN_ROLE_SCOPES.keys():
             logger.error(f"Invalid admin role: {admin.role.name}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -69,9 +76,17 @@ async def login(
     access_token = create_access_token(data={"sub": user.email, "scopes": scopes})
     refresh_token = create_refresh_token(data={"sub": user.email, "scopes": scopes})
 
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,  # Prevent JavaScript access (XSS protection)
+        secure=False if settings.DEBUG else True,    # Use HTTPS only (production best practice)
+        samesite="Strict",  # Prevent CSRF (adjust as needed)
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Expiry in seconds
+    )
+
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
         "scopes": scopes,
     }
@@ -79,10 +94,17 @@ async def login(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-    refresh_token_request: RefreshTokenRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    payload = verify_refresh_token(refresh_token_request.refresh_token)
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing"
+        )
+    
+    payload = verify_refresh_token(refresh_token)
     user_email = payload.get("sub")
 
     user = await get_user_by_email(db, user_email)
@@ -100,7 +122,7 @@ async def refresh_token(
         scopes = ["instructor"]
     elif user.role == UserRole.ADMIN:
         admin = await get_admin_by_id(db, user.id)
-        if admin.role.name not in VALID_ADMIN_ROLES:
+        if admin.role.name not in ADMIN_ROLE_SCOPES.keys():
             logger.error(f"Invalid admin role: {admin.role.name}")
             raise HTTPException(status_code=500, detail="Invalid role configuration")
         scopes = ADMIN_ROLE_SCOPES.get(admin.role.name, ["admin"])
