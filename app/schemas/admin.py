@@ -1,5 +1,6 @@
 # app/schemas/admin.py
 
+from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 from uuid import UUID
@@ -79,9 +80,11 @@ class AdminResponse(BaseModel):
     Schema for returning admin details.
     """
     id: UUID
-    role_id: Optional[UUID]
-    created_at: str
-    updated_at: str
+    full_name: str
+    role_id: UUID
+    role_name: str
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True  # Enable ORM mode for SQLAlchemy models

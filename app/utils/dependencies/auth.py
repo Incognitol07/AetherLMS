@@ -9,31 +9,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import User, Admin, UserRole
 from pydantic import BaseModel
-from app.utils import (
-    verify_access_token, 
-    get_by_email, 
-    logger
-    )
+from app.utils import verify_access_token, get_user_by_email, logger
+
 # app/utils/dependencies/auth.py
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 
 # Define scopes and their descriptions
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="auth/login"
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
 
 # Update TokenData schema
 class TokenData(BaseModel):
     email: str | None = None
     scopes: list[str] = []
 
+
 async def get_current_user(
     security_scopes: SecurityScopes,
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> User:
-    authenticate_value = f'Bearer scope="{security_scopes.scope_str}"' if security_scopes.scopes else "Bearer"
-    
+    authenticate_value = (
+        f'Bearer scope="{security_scopes.scope_str}"'
+        if security_scopes.scopes
+        else "Bearer"
+    )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -47,7 +48,7 @@ async def get_current_user(
 
         email: str = payload.get("sub")
         token_scopes = payload.get("scopes", [])
-        
+
         if email is None:
             raise credentials_exception
 
@@ -58,9 +59,11 @@ async def get_current_user(
         raise credentials_exception
     except SQLAlchemyError as e:
         logger.error(f"Database error: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error"
+        )
 
-    user = await get_by_email(db, email=token_data.email)
+    user = await get_user_by_email(db, email=token_data.email)
     if user is None:
         raise credentials_exception
 
@@ -75,8 +78,10 @@ async def get_current_user(
 
     return user
 
+
 # app/utils/dependencies/auth.py
 from fastapi import Security
+
 
 # Basic role-based scopes
 def require_scope(scope: str):
@@ -84,13 +89,16 @@ def require_scope(scope: str):
         current_user: User = Security(get_current_user, scopes=[scope])
     ):
         return current_user
+
     return _require_scope
+
 
 def require_admin_subscope(scope: str):
     async def _require_admin_subscope(
         current_user: User = Security(get_current_user, scopes=["admin", scope])
     ):
         return current_user
+
     return _require_admin_subscope
 
 
