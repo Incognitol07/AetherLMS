@@ -34,7 +34,7 @@ async def list_roles(
     List all roles.
     """
     try:
-        roles = await db.execute(select(Role))
+        roles = await db.execute(select(Role).options(selectinload(Role.permissions)))
         return roles.scalars().all()
     except Exception as e:
         logger.error(f"Error listing roles: {e}")
