@@ -16,7 +16,7 @@ from app.utils import (
     get_role_by_name,
     get_admin_by_id,
     get_role_by_id,
-    get_user_by_id
+    get_user_by_id,
 )
 from app.schemas.admin import AdminResponse, AdminCreate, AdminUpdate
 
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/roles")
 async def list_roles(
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_admin),  # Any admin can list roles
+    current_user: User = Depends(get_current_admin),  # Any admin can list roles
 ):
     """
     List all roles.
@@ -48,14 +48,13 @@ async def list_roles(
 async def get_role(
     role_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_admin),  # Any admin can view roles
+    current_user: User = Depends(get_current_admin),  # Any admin can view roles
 ):
     """
     Get details of a specific role.
     """
     try:
-        role = await db.execute(select(Role).filter(Role.id == role_id))
-        role = role.scalars().first()
+        role = await get_role_by_id(db, role_id)
         if not role:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
@@ -76,7 +75,7 @@ async def get_role(
 async def create_admin(
     admin_data: AdminCreate,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_superadmin),  # Superadmin can create admins
+    current_user: User = Depends(get_superadmin),  # Superadmin can create admins
 ):
     """
     Create a new admin.
@@ -89,21 +88,14 @@ async def create_admin(
                 detail="User with this email already exists",
             )
 
-        new_user = await create_user(db, admin_data, is_admin=True)
-
-        role = await get_role_by_name(db, name=admin_data.admin_sub_role)
-        if not role:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Role does not exist",
-            )
+        new_user = await create_user(db, admin_data)
 
         # Create the admin
-        admin = Admin(id=new_user.id, role_id=role.id)
+        admin = Admin(id=new_user.id)
         db.add(admin)
         await db.commit()
         logger.info(
-            f"Admin created for user ID '{admin.id}' by admin '{current_admin.email}'."
+            f"Admin created for user ID '{admin.id}' by admin '{current_user.email}'."
         )
         return {"message": "Admin created successfully", "admin_id": admin.id}
     except HTTPException:
@@ -119,22 +111,22 @@ async def create_admin(
 @router.get("/", response_model=list[AdminResponse])
 async def list_admins(
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_admin),  # Any admin can list admins
+    current_user: User = Depends(get_superadmin),  # Any admin can list admins
 ):
     """
     List all admins.
     """
     try:
         admins = await db.execute(
-            select(Admin).options(selectinload(Admin.role), selectinload(Admin.user))
+            select(Admin).options(selectinload(Admin.user).selectinload(User.role))
         )
         result = admins.scalars().all()
         return [
             {
                 "created_at": admin.created_at,
                 "updated_at": admin.updated_at,
-                "role_id": admin.role_id,
-                "role_name": admin.role.name,
+                "role_id": admin.user.role_id,
+                "role_name": admin.user.role.name,
                 "id": admin.id,
                 "full_name": admin.user.full_name,
             }
@@ -148,27 +140,11 @@ async def list_admins(
         )
 
 
-@router.get("/sub-role")
-async def get_admin_sub_role(
-    current_admin: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
-):
-    admin = await get_admin_by_id(db, current_admin.id)
-
-    if not admin or not admin.role_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Admin sub-role not found",
-        )
-
-    return {"admin_sub_role": admin.role.name}
-
-
 @router.get("/{admin_id}", response_model=AdminResponse)
 async def get_admin(
     admin_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_current_admin),  # Any admin can view admins
+    current_user: User = Depends(get_current_admin),  # Any admin can view admins
 ):
     """
     Get details of a specific admin.
@@ -182,8 +158,8 @@ async def get_admin(
         return {
             "created_at": admin.created_at,
             "updated_at": admin.updated_at,
-            "role_id": admin.role_id,
-            "role_name": admin.role.name,
+            "role_id": admin.user.role_id,
+            "role_name": admin.user.role.name,
             "id": admin.id,
             "full_name": admin.user.full_name,
         }
@@ -200,7 +176,7 @@ async def update_admin(
     admin_id: UUID,
     admin_data: AdminUpdate,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_superadmin),  # Superadmin can update admins
+    current_user: User = Depends(get_superadmin),  # Superadmin can update admins
 ):
     """
     Update an admin.
@@ -214,10 +190,10 @@ async def update_admin(
 
         # Update admin fields
         if admin_data.role_id:
-            admin.role_id = admin_data.role_id
-
+            role = await get_role_by_id(db, admin_data.role_id)
+            admin.user.role = role
         await db.commit()
-        logger.info(f"Admin '{admin.id}' updated by admin '{current_admin.email}'.")
+        logger.info(f"Admin '{admin.id}' updated by admin '{current_user.email}'.")
         return {"message": f"Admin '{admin.user.full_name}' updated successfully"}
     except Exception as e:
         logger.error(f"Error updating admin: {e}")
@@ -231,7 +207,7 @@ async def update_admin(
 async def delete_admin(
     admin_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(get_superadmin),  # Superadmin can delete admins
+    current_user: User = Depends(get_superadmin),  # Superadmin can delete admins
 ):
     """
     Delete an admin.
@@ -242,7 +218,7 @@ async def delete_admin(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Admin not found"
             )
-        
+
         user = await get_user_by_id(db, admin.id)
         if not user:
             raise HTTPException(
@@ -252,7 +228,7 @@ async def delete_admin(
         await db.delete(admin)
         await db.delete(user)
         await db.commit()
-        logger.info(f"Admin '{admin.id}' deleted by admin '{current_admin.email}'.")
+        logger.info(f"Admin '{admin.id}' deleted by admin '{current_user.email}'.")
     except Exception as e:
         logger.error(f"Error deleting admin: {e}")
         raise HTTPException(

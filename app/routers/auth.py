@@ -10,7 +10,7 @@ from fastapi import (
     )
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import UserRole, Role
+from app.models import Role
 from app.database import get_db
 from app.utils import (
     create_access_token,
@@ -23,7 +23,8 @@ from app.utils import (
     logger,
     create_student,
     create_instructor,
-    REFRESH_TOKEN_EXPIRE_DAYS
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    get_role_by_name
 )
 from app.schemas.auth import Token, UserCreate, LoginResponse
 from app.config import settings
@@ -53,25 +54,25 @@ async def login(
 
     # Determine scopes based on user role and permissions
     scopes = []
-    if user.role == UserRole.STUDENT:
+    if user.role.name == "student":
         scopes = ["student"]
-    elif user.role == UserRole.INSTRUCTOR:
+    elif user.role.name == "instructor":
         scopes = ["instructor"]
-    elif user.role == UserRole.ADMIN:
+    else:
         admin = await get_admin_by_id(db, user.id)
-        if not admin or not admin.role:
+        if not admin or not admin.user.role:
             logger.error(f"Admin role missing for user {user.id}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrator account not properly configured",
             )
-        if admin.role.name not in  ADMIN_ROLE_SCOPES.keys():
+        if admin.user.role.name not in  ADMIN_ROLE_SCOPES.keys():
             logger.error(f"Invalid admin role: {admin.role.name}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Invalid role configuration",
             )
-        scopes = ADMIN_ROLE_SCOPES.get(admin.role.name, ["admin"])
+        scopes = ADMIN_ROLE_SCOPES.get(admin.user.role.name, ["admin"])
 
     access_token = create_access_token(data={"sub": user.email, "scopes": scopes})
     refresh_token = create_refresh_token(data={"sub": user.email, "scopes": scopes})
@@ -116,16 +117,19 @@ async def refresh_token(
 
     # Determine scopes based on user role and permissions
     scopes = []
-    if user.role == UserRole.STUDENT:
+    if user.role.name == "student":
         scopes = ["student"]
-    elif user.role == UserRole.INSTRUCTOR:
+    elif user.role.name == "instructor":
         scopes = ["instructor"]
-    elif user.role == UserRole.ADMIN:
+    else:
+        if user.role.name not in ADMIN_ROLE_SCOPES.keys():
+            logger.error(f"Invalid admin role: {user.role.name}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail="Invalid role configuration"
+                )
         admin = await get_admin_by_id(db, user.id)
-        if admin.role.name not in ADMIN_ROLE_SCOPES.keys():
-            logger.error(f"Invalid admin role: {admin.role.name}")
-            raise HTTPException(status_code=500, detail="Invalid role configuration")
-        scopes = ADMIN_ROLE_SCOPES.get(admin.role.name, ["admin"])
+        scopes = ADMIN_ROLE_SCOPES.get(user.role.name, ["admin"])
 
     access_token = create_access_token(data={"sub": user.email, "scopes": scopes})
 
@@ -135,27 +139,33 @@ async def refresh_token(
 @router.post("/signup")
 async def signup(
     user_data: UserCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
-    # Prevent users from signing up as an admin
-    if user_data.role == UserRole.ADMIN:
+    try:
+        # Check if user already exists
+        existing_user = await get_user_by_email(db, user_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
+        
+        if user_data.role_name not in {"student", "instructor"}:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid role"
+            )
+        new_user = await create_user(db, user_data, role_name=user_data.role_name)
+        if user_data.role_name == "student":
+            await create_student(db, new_user.id)
+        if user_data.role_name == "instructor":
+            await create_instructor(db, new_user.id)
+
+        return {"message": f"{user_data.role_name.title()} created successfully", "user_id": new_user.id}
+    except Exception as e:
+        logger.error(f"Unexpected error during signup: {e}")
+        await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Signing up as an admin is not allowed.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error"
         )
-
-    # Check if user already exists
-    existing_user = await get_user_by_email(db, user_data.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
-        )
-
-    new_user = await create_user(db, user_data)
-    if new_user.role == UserRole.STUDENT:
-        new_student = await create_student(db, new_user.id)
-    if new_user.role == UserRole.INSTRUCTOR:
-        new_instructor = await create_instructor(db, new_user.id)
-
-    return {"message": "User created successfully", "user_id": new_user.id}

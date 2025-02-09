@@ -3,7 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.models import User, Student, Instructor, Admin, Role, UserRole
+from app.models import User, Student, Instructor, Admin, Role
 from app.schemas.auth import UserCreate
 from app.utils import hash_password
 from uuid import UUID
@@ -21,7 +21,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         User | None: The user object if found, otherwise None.
     """
-    result = await db.execute(select(User).filter(User.email == email))
+    result = await db.execute(select(User).options(selectinload(User.role)).filter(User.email == email))
     return result.scalars().first()
 
 
@@ -66,7 +66,7 @@ async def get_role_by_id(db: AsyncSession, id: UUID) -> Role | None:
     Returns:
         User | None: The user object if found, otherwise None.
     """
-    result = await db.execute(select(Role).filter(Role.id == id))
+    result = await db.execute(select(Role).options(selectinload(Role.permissions)).filter(Role.id == id))
     return result.scalars().first()
 
 
@@ -83,14 +83,16 @@ async def get_admin_by_id(db: AsyncSession, id: UUID) -> Admin | None:
     """
     result = await db.execute(
         select(Admin)
-        .options(selectinload(Admin.role), selectinload(Admin.user))
+        .options(selectinload(Admin.user).selectinload(User.role))
         .filter(Admin.id == id)
     )
     return result.scalar()
 
 
 async def create_user(
-    db: AsyncSession, user: UserCreate, is_admin: bool = False
+    db: AsyncSession, 
+    user: UserCreate, 
+    role_name: str
 ) -> User:
     """
     Create a new user in the database.
@@ -98,17 +100,21 @@ async def create_user(
     Args:
         db (AsyncSession): The database session.
         user (UserCreate): The user data to create.
+        role_name(str): The name of the role of the user
 
     Returns:
         User: The newly created user object.
     """
     try:
+        role = await get_role_by_name(db=db,name=role_name)
+        if not role:
+            raise Exception("Role does not exist")
         hashed_password = hash_password(user.password)
         db_user = User(
             full_name=user.full_name,
             email=user.email,
             hashed_password=hashed_password,
-            role=UserRole.ADMIN if is_admin else user.role,
+            role_id=role.id,
         )
         db.add(db_user)
         await db.commit()
@@ -120,7 +126,7 @@ async def create_user(
         raise
 
 
-async def create_student(db: AsyncSession, user_id: UUID):
+async def create_student(db: AsyncSession, user_id: UUID) -> Student:
     """
     Create a new user in the database.
 
@@ -138,7 +144,7 @@ async def create_student(db: AsyncSession, user_id: UUID):
     return db_student
 
 
-async def create_instructor(db: AsyncSession, user_id: UUID):
+async def create_instructor(db: AsyncSession, user_id: UUID) -> Instructor:
     """
     Create a new user in the database.
 

@@ -1,6 +1,6 @@
 # app/models/__init__.py
 
-from .user import User, UserRole
+from .user import User
 from .admin import Admin, Role
 from .course import Course
 from .module import Module
@@ -17,4 +17,4 @@ from .notification import Notification, NotificationType
 from .payment import Payment
 from .submission import Submission
 from .permission import Permission
-from .association_tables import course_instructors, role_permission  # Add this line
+from .association_tables import course_instructors, role_permission

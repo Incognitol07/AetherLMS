@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 from uuid import UUID
 from .auth import UserCreate
-from app.models import UserRole
+from app.models import Role
 
 # ------------------------------ Role Schemas ------------------------------
 
@@ -46,8 +46,7 @@ class AdminCreate(UserCreate):
     """
     Schema for creating a new admin.
     """
-    role: Optional[UserRole] = None
-    admin_sub_role: str
+    pass
 
 
 class AdminUpdate(BaseModel):

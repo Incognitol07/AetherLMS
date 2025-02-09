@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
 from uuid import UUID
-from app.models import UserRole
 
 class Token(BaseModel):
     access_token: str
@@ -10,11 +9,9 @@ class Token(BaseModel):
 class LoginResponse(Token):
     scopes: list
 
-
-
 class UserBase(BaseModel):
     email: EmailStr
-    role: UserRole
+    role_name: str = "student"
 
 class UserCreate(UserBase):
     full_name: str

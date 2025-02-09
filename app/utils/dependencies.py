@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models import User, Admin, UserRole
+from app.models import User, Admin
 from pydantic import BaseModel
 from app.utils import verify_access_token, get_user_by_email, logger
 
