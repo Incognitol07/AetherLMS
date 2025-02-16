@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
-from app.models import Course, Instructor
+from app.models import Course, User, Instructor
 from app.utils import (
     get_current_instructor, 
     get_current_user, 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 async def create_course(
     course_data: dict,
     db: AsyncSession = Depends(get_db),
-    current_user: Instructor = Depends(get_current_instructor),
+    current_user: User = Depends(get_current_instructor),
 ):
     try:
         course = Course(**course_data)

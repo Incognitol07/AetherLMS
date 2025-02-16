@@ -1,3 +1,5 @@
-from typing import List, Optional
-from datetime import date
 from pydantic import BaseModel
+
+class CourseCreate(BaseModel):
+    title: str
+    description: str
