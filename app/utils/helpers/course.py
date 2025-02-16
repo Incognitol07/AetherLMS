@@ -1,11 +1,12 @@
 # app/utils/helpers/course.py
 
+from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.models import Course, Student, Instructor
+from app.models import Course, Student, Instructor, User
 from uuid import UUID
-from app.utils import logger
+
 
 
 
@@ -67,3 +68,15 @@ async def get_instructor_by_id(db: AsyncSession, id: UUID) -> Instructor | None:
     """
     result = await db.execute(select(Instructor).options(selectinload(Instructor.courses)).filter(Instructor.id == id))
     return result.scalar_one_or_none()
+
+
+async def validate_course_owner(course_id: UUID, user: User) -> Course:
+    course = await get_course_by_id(course_id)
+
+    if not course:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    
+    if user.id not in [i.id for i in course.instructors]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this course")
+    
+    return course

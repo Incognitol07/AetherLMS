@@ -11,6 +11,7 @@ from app.utils import (
     get_course_by_title,
     get_course_by_id,
     get_instructor_by_id,
+    validate_course_owner,
     logger
     )
 from app.schemas import (
@@ -86,13 +87,7 @@ async def update_course(
     try:
         
         # Get existing course
-        course = await get_course_by_id(db, course_id)
-        if not course:
-            raise HTTPException(status_code=404, detail="Course not found")
-
-        # Authorization check
-        if current_user.id not in [instructor.id for instructor in course.instructors]:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this course")
+        course = await validate_course_owner(course_id, current_user)
 
         update_data = course_data.model_dump(exclude_unset=True)
 
@@ -139,20 +134,7 @@ async def delete_course(
 ):
     try:
         # 1. Check if course exists first
-        course = await get_course_by_id(db, course_id)
-        if not course:
-            logger.warning(f"Course with ID '{course_id}' not found.")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Course not found"
-            )
-
-        # 2. Check authorization after existence check
-        if current_user.id not in [instructor.id for instructor in course.instructors]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to modify this course"
-            )
+        course = await validate_course_owner(course_id, current_user)
 
         # 3. Perform deletion
         await db.delete(course)
@@ -178,19 +160,7 @@ async def create_module(
     current_user: User = Depends(get_current_instructor),
 ):
     try:
-        course = await get_course_by_id(db, course_id)
-        if not course:
-            logger.warning(f"Course with ID '{course_id}' not found.")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Course not found"
-            )
-        
-        if current_user.id not in [instructor.id for instructor in course.instructors]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to modify this course"
-            )
+        course = await validate_course_owner(course_id, current_user)
         
         new_module = Module(**module_data.model_dump(), course_id=course.id)
         db.add(new_module)
