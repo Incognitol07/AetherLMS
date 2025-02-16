@@ -46,7 +46,8 @@ async def get_course_by_id(db: AsyncSession, id: UUID) -> Course | None:
             selectinload(Course.payments),
             selectinload(Course.modules),
             selectinload(Course.discussions),
-            selectinload(Course.enrollments)
+            selectinload(Course.enrollments),
+            selectinload(Course.instructors)
             )
         .filter(Course.id == id)
         )
