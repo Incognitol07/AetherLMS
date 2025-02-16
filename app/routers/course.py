@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
-from app.models import Course, User
+from app.models import Course, User, Module
 from app.utils import (
     get_current_instructor, 
     get_course_by_title,
@@ -16,7 +16,9 @@ from app.utils import (
 from app.schemas import (
     CourseCreate, 
     CourseResponse,
-    CourseUpdate
+    CourseUpdate,
+    ModuleResponse,
+    ModuleCreate
     )
 from typing import List
 
@@ -165,4 +167,44 @@ async def delete_course(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
+        )
+
+
+@router.post("/{course_id}/modules", response_model=ModuleResponse)
+async def create_module(
+    course_id: UUID,
+    module_data: ModuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_instructor),
+):
+    try:
+        course = await get_course_by_id(db, course_id)
+        if not course:
+            logger.warning(f"Course with ID '{course_id}' not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Course not found"
+            )
+        
+        if current_user.id not in [instructor.id for instructor in course.instructors]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to modify this course"
+            )
+        
+        new_module = Module(**module_data.model_dump(), course_id=course.id)
+        db.add(new_module)
+        await db.commit()
+        await db.refresh(new_module)
+        logger.info(
+            f"Course '{new_module.title}' created by instructor '{current_user.email}'."
+        )
+        return new_module
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating course: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
         )

@@ -18,5 +18,7 @@ from .auth import(
 from .course import(
     CourseCreate,
     CourseResponse,
-    CourseUpdate
+    CourseUpdate,
+    ModuleCreate,
+    ModuleResponse
 )

@@ -30,3 +30,21 @@ class CourseUpdate(BaseModel):
     description: Optional[str] = None
     is_free: Optional[bool] = None
     duration_days: Optional[int] = None
+
+
+class ModuleCreate(BaseModel):
+    title: str
+    description: str
+    order: float
+
+
+class ModuleResponse(BaseModel):
+    id: UUID
+    course_id: UUID
+    title: str
+    description: str
+    order: float
+    created_at: datetime
+
+    class Config:
+        from_attributes=True
