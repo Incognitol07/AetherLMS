@@ -10,3 +10,9 @@ from .auth import (
     get_role_by_id,
     get_user_by_id
 )
+
+from .course import(
+    get_course_by_id,
+    get_course_by_title,
+    get_instructor_by_id
+)

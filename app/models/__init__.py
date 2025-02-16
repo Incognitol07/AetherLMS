@@ -2,7 +2,7 @@
 
 from .user import User
 from .admin import Admin, Role
-from .course import Course
+from .course import Course, CourseStatus
 from .module import Module
 from .assignment import Assignment
 from .student import Student

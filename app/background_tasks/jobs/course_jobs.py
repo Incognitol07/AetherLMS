@@ -63,7 +63,7 @@ async def bulk_enroll_students(
                     for p in course.payments
                 )
 
-                if payment_exists or course.is_free:  # Assuming is_free property
+                if payment_exists or course.is_free:
                     enrollment = Enrollment(
                         course_id=course_id, student_id=user.students.id
                     )

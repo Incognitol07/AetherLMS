@@ -144,7 +144,7 @@ async def update_user_role(
 
 
 # List users by role (admin-only)
-@router.get("/role/{role}")
+@router.get("/roles/{role}")
 async def get_user_role(
     role_name: str,
     db: AsyncSession = Depends(get_db),

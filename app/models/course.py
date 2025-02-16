@@ -9,6 +9,12 @@ from app.database import Base
 from .association_tables import course_instructors 
 from .module import Module
 from .enrollment import EnrollmentStatus
+from enum import Enum as PyEnum
+
+class CourseStatus(str, PyEnum):
+    ACTIVE="active"
+    COMPLETED="completed"
+    ARCHIVED="archived"
 
 class Course(Base):
     __tablename__ = "courses"
@@ -16,9 +22,8 @@ class Course(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(String, nullable=False)
     description = Column(Text)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
-    status = Column(Enum("active", "completed", "archived", name="course_status"), default="active")
+    status = Column(Enum(CourseStatus), default=CourseStatus.ACTIVE)
+    duration_days = Column(Integer, nullable=True)  
     enrollment_count = Column(Integer, default=0)
     instructor_count = Column(Integer, default=0)
     is_free = Column(Boolean, default=True)
@@ -34,13 +39,16 @@ class Course(Base):
     payments = relationship("Payment", back_populates="course")
     enrollments = relationship("Enrollment", back_populates="course")
 
-    def add_instructor(self, instructor: "Instructor"): # type: ignore
-        """Add an instructor to the course."""
-        self.instructors.append(instructor)
+    def add_instructor(self, instructor: "Instructor"):  # type: ignore
+        """Add an instructor to the course if not already added."""
+        if instructor not in self.instructors:
+            self.instructors.append(instructor)
+        self.instructor_count = len(self.instructors)
 
     def remove_instructor(self, instructor: "Instructor"): # type: ignore
         """Remove an instructor from the course."""
         self.instructors.remove(instructor)
+        self.instructor_count = len(self.instructors)
 
     def add_module(self, module: Module):
         """Add a module to the course."""
