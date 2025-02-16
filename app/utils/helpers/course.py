@@ -70,8 +70,8 @@ async def get_instructor_by_id(db: AsyncSession, id: UUID) -> Instructor | None:
     return result.scalar_one_or_none()
 
 
-async def validate_course_owner(course_id: UUID, user: User) -> Course:
-    course = await get_course_by_id(course_id)
+async def validate_course_owner(db: AsyncSession, course_id: UUID, user: User) -> Course:
+    course = await get_course_by_id(db, course_id)
 
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")

@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import delete
 from app.database import get_db
 from app.models import Course, User, Module
 from app.utils import (
@@ -133,12 +134,13 @@ async def delete_course(
     current_user: User = Depends(get_current_instructor),
 ):
     try:
-        # 1. Check if course exists first
-        course = await validate_course_owner(course_id, current_user)
+        course = await validate_course_owner(db, course_id, current_user)
 
-        # 3. Perform deletion
-        await db.delete(course)
-        await db.commit()  # Fixed missing parentheses
+        await db.execute(
+            delete(Course)
+            .where(Course.id == course_id)
+        )
+        await db.commit()
 
     except HTTPException:
         # Let specific HTTP exceptions bubble up
